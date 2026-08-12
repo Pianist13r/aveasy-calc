@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Калькулятор стоимости ведения Авито — Aveasy</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#f0f3f8}</style>
+</head>
+<body><!-- avz 05-pricing «Тарифы и стоимость» — калькулятор PIA-279 вместо тарифной сетки.
+  T123 для Tilda, самодостаточный (см. site-tilda/README.md + docs/site-relaunch/tilda-redesign-concept.md, п.6).
+  Движок — верстка/логика PIA-279 (core/pricing), инлайн ИЗ ГОТОВОГО БАНДЛА site/assets/calc.bundle.js
+  (собран esbuild'ом из web/widget-entry.js, скопирован сюда БЕЗ ИЗМЕНЕНИЙ — см. комментарий перед бандлом).
+  Пресеты — строго «Старт / Бизнес / Премиум» (config/pricing.config.js:410-453), имена не меняем.
+  Обязательные id/name для движка (widget.js): #ave-form, #ave-out, #ave-presets, #ave-regionmode-note,
+  name=accounts/regions/regionMode/placementLevel/autoresponder/analytics/promotionMgmt/noMonthly — НЕ трогать.
+  Классы, которые рендерит сам движок (ave-preset-card/.totals/.total/.row/.note/.cta/.breakdown/...) —
+  тоже не переименовать (пришли бы несовпадением); все ОСТАЛЬНЫЕ обёрточные классы — с префиксом avz-.
+  Результат расчёта уходит на шину: window.AVZ.calc (последний снимок) + событие avz:calc
+  (совместимо с AVZ.captureCalc из 00-foundation) — слушает форма #lead в 08-lead.
+  Деградации: no-JS → статичный ориентир из контент-констант (18 000 ₽ / 12 000 ₽ — реальные пороги
+  config.setupMin/minMonthly, не выдуманы) вместо интерактивного виджета; prefers-reduced-motion →
+  без transition/анимаций reveal; <760px → пресеты и форма в один столбец. -->
+<style>
+.avz-pricing{
+  position:relative;overflow:hidden;
+  background:var(--avz-light-bg,#f0f3f8);
+  color:var(--avz-ink,#0a1828);
+  font-family:'Manrope',Arial,sans-serif;
+  padding:clamp(48px,7vw,88px) 0;
+}
+/* приём донора: тонкая координатная сетка (радиальная маска) + пара голубых подсветок на светлом фоне */
+.avz-pricing::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(10,24,40,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,24,40,.05) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(80% 65% at 78% 12%,#000,transparent 78%);
+  mask-image:radial-gradient(80% 65% at 78% 12%,#000,transparent 78%);
+}
+.avz-pricing::after{
+  content:"";position:absolute;pointer-events:none;right:-140px;bottom:-140px;width:380px;height:380px;
+  border-radius:50%;background:radial-gradient(circle,rgba(0,153,238,.1),transparent 70%);
+}
+.avz-p-wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 clamp(18px,4vw,56px)}
+.avz-p-head{max-width:64ch}
+.avz-eyebrow{
+  display:flex;align-items:center;gap:10px;margin:0 0 14px;
+  font-family:'Manrope',Arial,sans-serif;font-weight:700;font-size:13px;
+  letter-spacing:.08em;text-transform:uppercase;color:#0055cc;
+}
+.avz-eyebrow::before{content:"→";color:#00a9d6}
+.avz-title{
+  margin:0 0 16px;font-family:'Unbounded',Arial,sans-serif;font-weight:700;
+  letter-spacing:-.02em;line-height:1.08;font-size:clamp(26px,3.6vw,44px);color:var(--avz-ink,#0a1828);
+}
+.avz-anchors{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.avz-anchor{
+  --c:8px;display:inline-flex;align-items:center;padding:9px 16px;font-size:13.5px;font-weight:700;
+  color:#0a1828;background:#fff;border:1px solid rgba(10,24,40,.1);
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+}
+/* .avz-p-lede: НЕ .avz-lead — тот класс носит секция #lead блока 08 (глобальный неймспейс страницы),
+   коллизия тащила сюда её padding/фон (баг превью 2026-08-06) */
+.avz-p-lede{margin:0 0 10px;font-size:16px;line-height:1.55;color:var(--avz-ink,#0a1828)}
+.avz-p-lede b{color:#0055cc}
+.avz-subnote{margin:0 0 32px;font-size:13.5px;line-height:1.5;color:rgba(10,24,40,.62)}
+
+/* ===== карточка калькулятора ===== */
+.avz-calc-shell{
+  --c:20px;position:relative;background:#fff;
+  /* тень даёт обёртка .avz-dsh (блок 00): box-shadow здесь срезался бы clip-path'ом */
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+  padding:clamp(20px,3vw,36px);
+}
+/* верхний акцент-бар с glow (приём донора) — псевдослой, не задевает движок под ним */
+.avz-calc-shell::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,#0055cc,#00d4ff);box-shadow:0 0 16px rgba(0,212,255,.5);
+}
+/* псевдо-UI статусбар над виджетом — чисто декоративный (aria-hidden в разметке), без новых слов */
+.avz-p-statusbar{display:flex;align-items:center;gap:8px;margin:2px 0 18px}
+.avz-p-statusbar i{width:7px;height:7px;border-radius:50%;background:rgba(10,24,40,.14);flex:0 0 auto}
+.avz-p-statusbar i:first-child{background:#00d4ff;box-shadow:0 0 6px #00d4ff}
+.avz-p-statusbar .avz-p-statusbar-rule{flex:1 1 auto;height:1px;background:linear-gradient(90deg,rgba(10,24,40,.12),transparent)}
+.avz-nojs{
+  padding:18px 20px;background:#f4f7fb;border:1px dashed rgba(0,85,204,.35);font-size:14.5px;line-height:1.55;
+}
+.avz-nojs a{color:#0055cc}
+
+/* виджет спрятан по умолчанию (без JS) — открывается классом avz-js на секции */
+#ave-calc-widget{display:none}
+.avz-js #ave-calc-widget{display:block}
+
+.avz-calc-lead{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--avz-ink,#0a1828)}
+
+/* пресеты (рендерятся движком в #ave-presets: .ave-preset-card/.ave-preset-label/... ) */
+#ave-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.ave-preset-card{
+  --c:12px;position:relative;overflow:hidden;padding:20px 16px 18px;background:#f7f9fc;border:1px solid rgba(10,24,40,.08);
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+  display:flex;flex-direction:column;gap:4px;
+  transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+/* тонкая верхняя полоска в градиенте — приём донора (свои селекторы, класс движка не трогаем) */
+.ave-preset-card::before{
+  content:"";position:absolute;pointer-events:none;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,#0055cc,#00d4ff);opacity:.7;transition:opacity .2s ease;
+}
+.ave-preset-card:hover{
+  border-color:rgba(0,85,204,.4);transform:translateY(-3px);background:#fff;
+}
+.ave-preset-card:hover::before{opacity:1}
+/* «Бизнес» — средний пресет (2-й по порядку config.presets: start/business/premium) — бейдж чисто CSS,
+   без текста (ЧТОБЫ не выдумывать новых слов) */
+#ave-presets .ave-preset-card:nth-child(2){border-color:rgba(0,212,255,.4)}
+#ave-presets .ave-preset-card:nth-child(2)::after{
+  content:"";position:absolute;pointer-events:none;top:10px;right:10px;width:9px;height:9px;border-radius:50%;
+  background:#00d4ff;box-shadow:0 0 8px #00d4ff;
+}
+.ave-preset-label{font-family:'Unbounded',Arial,sans-serif;font-weight:700;font-size:17px;color:var(--avz-ink,#0a1828)}
+.ave-preset-sub{font-size:12px;line-height:1.4;color:rgba(10,24,40,.58);min-height:34px}
+.ave-preset-price{font-family:'Unbounded',Arial,sans-serif;font-weight:800;font-size:19px;margin-top:6px;color:#0055cc}
+.ave-preset-monthly{font-size:13px;color:rgba(10,24,40,.62)}
+.ave-preset-btn{
+  --c:8px;margin-top:10px;padding:9px 14px;font-size:13px;font-weight:700;color:#fff;border:0;cursor:pointer;
+  background:var(--avz-btn-grad,linear-gradient(135deg,#0055cc,#003d99));
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+}
+
+/* результат (рендерится движком в #ave-out: .totals/.total/.breakdown/.note/.cta ...) */
+#ave-out .totals{display:flex;gap:14px;margin:4px 0 16px;flex-wrap:wrap}
+#ave-out .total{
+  --c:14px;flex:1 1 200px;position:relative;overflow:hidden;padding:16px 18px;color:#fff;
+  background:var(--avz-dark-grad,linear-gradient(148deg,#061022 0%,#0c1e40 30%,#112856 62%,#1a3d96 100%));
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+}
+/* лёгкая внутренняя сетка + угловой блик (приём донора) — свои селекторы поверх готовой карточки */
+#ave-out .total::before{
+  content:"";position:absolute;z-index:0;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(140,180,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(140,180,255,.14) 1px,transparent 1px);
+  background-size:18px 18px;
+  -webkit-mask-image:radial-gradient(90% 120% at 100% 0%,#000,transparent 70%);
+  mask-image:radial-gradient(90% 120% at 100% 0%,#000,transparent 70%);
+}
+#ave-out .total::after{
+  content:"";position:absolute;z-index:0;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.22),transparent 70%);pointer-events:none;
+}
+#ave-out .total > *{position:relative;z-index:1}
+#ave-out .total span{display:block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(220,235,255,.66)}
+#ave-out .total b{
+  display:block;margin-top:6px;font-family:'Unbounded',Arial,sans-serif;font-weight:800;letter-spacing:-.01em;
+  font-size:clamp(20px,2.4vw,26px);color:var(--avz-accent,#00d4ff);
+  text-shadow:var(--avz-accent-glow-sm,0 0 10px #00d4ff);font-variant-numeric:tabular-nums;
+}
+#ave-out .ave-total-sub{margin-top:4px;font-size:11px;color:rgba(220,235,255,.5)}
+#ave-out .breakdown{margin:12px 0;font-size:14px}
+#ave-out .ave-pkg-header{font-weight:700;font-size:12.5px;margin:12px 0 4px;color:rgba(10,24,40,.6);text-transform:uppercase;letter-spacing:.04em}
+#ave-out .ave-pkg-item{padding:3px 0;color:rgba(10,24,40,.72);font-size:13.5px}
+#ave-out .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(10,24,40,.08)}
+#ave-out .row b{font-weight:700;white-space:nowrap}
+#ave-out .note{font-size:12.5px;line-height:1.5;color:rgba(10,24,40,.58);margin:10px 0}
+#ave-out .note.ave-preliminary{color:#a15c00}
+#ave-out .cta{
+  --c:12px;margin-top:6px;padding:14px 26px;font-family:'Manrope',Arial,sans-serif;font-weight:700;font-size:15px;
+  color:#fff;border:0;cursor:pointer;background:var(--avz-btn-grad-2,linear-gradient(135deg,#0055cc 0%,#0099ee 100%));
+  box-shadow:var(--avz-btn-shadow,0 24px 60px rgba(0,85,204,.35));
+  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
+}
+
+/* «настроить точнее» — details/summary + форма */
+.avz-calc-adv{margin-top:6px;border-top:1px solid rgba(10,24,40,.1);padding-top:14px}
+.avz-calc-adv summary{
+  cursor:pointer;list-style:none;font-weight:700;font-size:14px;color:#0055cc;
+  display:flex;align-items:center;gap:6px;user-select:none;
+}
+.avz-calc-adv summary::-webkit-details-marker{display:none}
+.avz-chev{transition:transform .2s}
+.avz-calc-adv[open] .avz-chev{transform:rotate(180deg)}
+.avz-cf-sec{
+  display:flex;align-items:center;gap:8px;margin:18px 0 10px;font-weight:700;font-size:13px;
+  text-transform:uppercase;letter-spacing:.04em;color:rgba(10,24,40,.55);
+}
+.avz-cf-ic{color:#0055cc}
+.avz-cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+.avz-cf-field{display:block;font-size:12.5px;font-weight:600;color:rgba(10,24,40,.62)}
+.avz-cf-field input,.avz-cf-field select{
+  width:100%;margin-top:5px;padding:9px 10px;font-size:14px;font-family:'Manrope',Arial,sans-serif;
+  color:var(--avz-ink,#0a1828);background:#fff;border:1px solid rgba(10,24,40,.16);box-sizing:border-box;
+}
+.avz-cf-wide{grid-column:1 / -1}
+.avz-param-hint,#ave-out .param-hint,.avz-calc-shell .param-hint{
+  display:block;grid-column:1 / -1;font-size:11.5px;line-height:1.45;color:rgba(10,24,40,.5);margin:-4px 0 4px;
+}
+.avz-cf-toggle{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--avz-ink,#0a1828)}
+.avz-cf-toggle input{width:auto;margin:0;accent-color:#0055cc}
+
+/* строки товаров, создаваемые движком динамически (#items-container .item-row) */
+.avz-calc-shell #items-container{grid-column:1 / -1}
+.avz-calc-shell .item-row{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;
+}
+.avz-calc-shell .item-row select,.avz-calc-shell .item-row input{
+  padding:8px 9px;font-size:13.5px;font-family:'Manrope',Arial,sans-serif;border:1px solid rgba(10,24,40,.16);background:#fff;
+}
+.avz-calc-shell .item-remove{background:none;border:none;color:#c00;cursor:pointer;font-size:15px}
+.avz-calc-shell #items-container ~ button{
+  grid-column:1 / -1;justify-self:start;background:none;border:1px dashed rgba(0,85,204,.4);color:#0055cc;
+  padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;margin:4px 0 8px;
+}
+
+/* Гейт под маркер секции (#calc.avz-js ставит скрипт ниже): без JS ничего не прячем —
+   негейтированная версия ломала no-JS и себе, и блоку 02 (находка GLM-ревью 2026-08-05). */
+#calc.avz-js .avz-reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+#calc.avz-js .avz-reveal.avz-in{opacity:1;transform:none}
+
+@media (max-width:900px){
+  #ave-presets{grid-template-columns:1fr}
+  .avz-cf-grid{grid-template-columns:1fr}
+}
+@media (max-width:759px){
+  #ave-out .totals{flex-direction:column}
+}
+@media (prefers-reduced-motion:reduce){
+  .avz-pricing *,.avz-pricing *::before,.avz-pricing *::after{transition:none!important;animation:none!important}
+  .avz-reveal{opacity:1!important;transform:none!important}
+  .ave-preset-card:hover{transform:none}
+}
+</style>
+
+<section class="avz-pricing" id="calc" aria-labelledby="avz-p-title">
+  <div class="avz-p-wrap">
+
+    <div class="avz-p-head avz-reveal">
+      <div class="avz-eyebrow">прозрачно</div>
+      <h2 class="avz-title" id="avz-p-title">Тарифы и стоимость</h2>
+      <div class="avz-anchors">
+        <span class="avz-anchor">Стартовая настройка — от 18 000 ₽ разово</span>
+        <span class="avz-anchor">Ведение — от 12 000 ₽/мес</span>
+      </div>
+      <p class="avz-p-lede">Две части — и обе по вашему выбору. Нужна <b>только настройка</b> кабинета — сделаем её разово. Нужно, чтобы <b>вели дальше</b> — возьмём на ведение. Можем и просто настроить, и начать вести уже <b>готовый, настроенный кабинет</b>. Соберите свой вариант в калькуляторе — расчёт предварительный, финальную смету подтвердим после бесплатного анализа.</p>
+      <p class="avz-subnote">Бюджет на платные сервисы Авито оплачивается площадке напрямую и в наши услуги не входит — применяем его по данным и не всегда, только когда это оправдано.</p>
+    </div>
+
+    <div class="avz-dsh">
+    <div class="avz-calc-shell avz-reveal">
+      <div class="avz-p-statusbar" aria-hidden="true"><i></i><i></i><i></i><span class="avz-p-statusbar-rule"></span></div>
+      <noscript>
+        <div class="avz-nojs">
+          <b>Ориентир без интерактивного расчёта:</b> настройка — от 18 000 ₽ разово, ведение — от 12 000 ₽/мес.
+          Итоговая сумма зависит от объёма и параметров кабинета — включите JavaScript для точного расчёта
+          или <a href="#lead">оставьте заявку</a>, посчитаем вручную.
+        </div>
+      </noscript>
+
+      <div class="ave-calc" id="ave-calc-widget">
+        <div class="avz-calc-lead">Выберите готовый пакет — или настройте под свой случай ниже.</div>
+        <!-- НЕ менять id ниже — их читает движок (widget.js/calc.bundle.js) -->
+        <div id="ave-presets"></div>
+        <div id="ave-out"></div>
+        <details class="avz-calc-adv">
+          <summary>Настроить точнее под свой случай <span class="avz-chev" aria-hidden="true">▾</span></summary>
+          <form id="ave-form" class="avz-cf-grid">
+            <div class="avz-cf-sec"><span class="avz-cf-ic" aria-hidden="true">▦</span>Масштаб</div>
+            <label class="avz-cf-field">Аккаунтов <input type="number" name="accounts" value="1" min="1"></label>
+            <label class="avz-cf-field">Регионов <input type="number" name="regions" value="1" min="1"></label>
+            <label class="avz-cf-field avz-cf-wide">Как размещаем по регионам
+              <select name="regionMode">
+                <option value="single">Одно объявление на все регионы</option>
+                <option value="repeat" selected>Одно объявление, размещаем в каждом регионе</option>
+                <option value="distinct">Свои объявления под каждый регион</option>
+              </select>
+            </label>
+            <small class="avz-param-hint" id="ave-regionmode-note"></small>
+
+            <div class="avz-cf-sec avz-cf-wide"><span class="avz-cf-ic" aria-hidden="true">✎</span>Контент и услуги</div>
+            <label class="avz-cf-field avz-cf-wide">Как у вас сейчас с данными о товарах?
+              <select name="placementLevel">
+                <option value="R1">Уже настроена автозагрузка на Авито</option>
+                <option value="R2" selected>Есть прайс-лист / таблица товаров</option>
+                <option value="R3">Данные разрозненные, нужна интеграция</option>
+                <option value="R4">Готовых данных нет, размещаем вручную</option>
+              </select>
+            </label>
+            <label class="avz-cf-field">Автоответчик
+              <select name="autoresponder">
+                <option value="none">Нет</option>
+                <option value="basic" selected>Обычный</option>
+                <option value="trainable">Обучаемый</option>
+              </select>
+            </label>
+            <label class="avz-cf-field">Аналитика
+              <select name="analytics">
+                <option value="basic" selected>Базовая</option>
+                <option value="extended">Расширенная</option>
+                <option value="crossCrm">Сквозная + CRM</option>
+              </select>
+            </label>
+
+            <div class="avz-cf-sec avz-cf-wide"><span class="avz-cf-ic" aria-hidden="true">⚙</span>Опции</div>
+            <label class="avz-cf-toggle"><input type="checkbox" name="promotionMgmt"> Управление продвижением</label>
+            <label class="avz-cf-toggle"><input type="checkbox" name="noMonthly"> Разовый проект — без ежемесячного ведения</label>
+          </form>
+        </details>
+      </div>
+    </div>
+    </div><!-- /.avz-dsh -->
+
+  </div>
+</section>
+
+<script>
+// Ранний переключатель JS/no-JS: без него виджет спрятан (#ave-calc-widget{display:none} в CSS выше),
+// вместо него виден <noscript>-ориентир. Выполняется сразу за разметкой — до бандла движка ниже.
+(function () {
+  var sec = document.getElementById('calc');
+  if (sec) sec.classList.add('avz-js');
+})();
+</script>
+
+<script>
+// ===== Движок калькулятора PIA-279 — БАНДЛ БЕЗ ИЗМЕНЕНИЙ =====
+// Инлайн содержимого site/assets/calc.bundle.js (esbuild --bundle --format=iife из core/pricing/web/widget-entry.js).
+// Цены/ставки/пресеты — из core/pricing/config/pricing.config.js, копия не редактировалась.
+// Пересборка при обновлении движка: cd core/pricing && ./node_modules/.bin/esbuild web/widget-entry.js
+//   --bundle --format=iife --charset=utf8 --outfile=../../site/assets/calc.bundle.js
+// — и этот же вывод скопировать сюда целиком (весь блок ниже, от "(() => {" до "})();").
+(() => {
+  // src/cost.js
+  function computeCost(inputs, config2) {
+    const w = config2.work;
+    const rates = config2.rates;
+    const lines = [];
+    const regions = inputs.regions || 1;
+    const REGION_MODES = {
+      distinct: { content: true, publications: true },
+      repeat: { content: false, publications: true },
+      single: { content: false, publications: false }
+    };
+    const rm = REGION_MODES[inputs.regionMode] || REGION_MODES.single;
+    const contentMult = rm.content ? regions : 1;
+    const pubMult = rm.publications ? regions : 1;
+    const items = inputs.items || [];
+    items.forEach((item, i) => {
+      const perUnit = config2.content.byType[item.type];
+      const mult = config2.content.statusMultiplier[item.contentStatus];
+      const qty = item.listings * contentMult;
+      const contentCost = perUnit * mult * qty;
+      const typeLabel = config2.content.typeLabels[item.type] || item.type;
+      lines.push({
+        key: `content#${i}`,
+        label: `Создание контента — ${typeLabel}`,
+        phase: "setup",
+        role: "content",
+        hours: null,
+        cost: contentCost,
+        qty,
+        unit: "объявление",
+        perUnit
+        // себестоимость ₽/объявл (до statusMultiplier)
+      });
+    });
+    const totalListings = items.reduce((s, it) => s + it.listings, 0);
+    const totalPublications = totalListings * pubMult;
+    const pl = inputs.placementLevel;
+    const P = config2.placement[pl];
+    if (P) {
+      if (P.setup !== 0) {
+        const fixedPrice = P.setup;
+        const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
+        lines.push({ key: "placement_setup", label: "Настройка размещения", phase: "setup", hours: null, cost, fixedPrice, qty: null, unit: null });
+      }
+      if (P.setupPerListing !== 0 && totalPublications > 0) {
+        const fixedPrice = P.setupPerListing * totalPublications;
+        const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
+        lines.push({ key: "placement_setup_listing", label: "Размещение объявлений", phase: "setup", hours: null, cost, fixedPrice, qty: totalPublications, unit: "объявление" });
+      }
+    }
+    const mgmtH = w.management.monthlyHoursPerAccount * inputs.accounts + w.management.monthlyHoursPerListing * totalPublications;
+    const mgmtCost = mgmtH * rates[w.management.role];
+    lines.push({ key: "management", label: "Ведение и оптимизация", phase: "monthly", role: w.management.role, hours: mgmtH, cost: mgmtCost, qty: null, unit: null });
+    const ar = inputs.autoresponder;
+    if (ar === "basic") {
+      const h = w.autoresponder.basic.monthlyHours;
+      const cost = h * rates[w.autoresponder.basic.role];
+      lines.push({ key: "autoresponder", label: "Автоответчик", phase: "monthly", role: w.autoresponder.basic.role, hours: h, cost, qty: null, unit: null });
+    } else if (ar === "trainable") {
+      const hSetup = w.autoresponder.trainable.setupHours;
+      const costSetup = hSetup * rates[w.autoresponder.trainable.role];
+      lines.push({ key: "autoresponder_setup", label: "Настройка автоответчика", phase: "setup", role: w.autoresponder.trainable.role, hours: hSetup, cost: costSetup, qty: null, unit: null });
+      const hMonthly = w.autoresponder.trainable.monthlyHours;
+      const costMonthly = hMonthly * rates[w.autoresponder.trainable.role];
+      lines.push({ key: "autoresponder", label: "Автоответчик", phase: "monthly", role: w.autoresponder.trainable.role, hours: hMonthly, cost: costMonthly, qty: null, unit: null });
+    }
+    const an = inputs.analytics;
+    if (an === "basic") {
+      const h = w.analytics.basic.monthlyHours;
+      const cost = h * rates[w.analytics.basic.role];
+      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.basic.role, hours: h, cost, qty: null, unit: null });
+    } else if (an === "extended") {
+      const h = w.analytics.extended.monthlyHours;
+      const cost = h * rates[w.analytics.extended.role];
+      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.extended.role, hours: h, cost, qty: null, unit: null });
+    } else if (an === "crossCrm") {
+      const hSetup = w.analytics.crossCrm.setupHours;
+      const costSetup = hSetup * rates[w.analytics.crossCrm.role];
+      lines.push({ key: "analytics_setup", label: "Подключение сквозной аналитики/CRM", phase: "setup", role: w.analytics.crossCrm.role, hours: hSetup, cost: costSetup, qty: null, unit: null });
+      const hMonthly = w.analytics.crossCrm.monthlyHours;
+      const costMonthly = hMonthly * rates[w.analytics.crossCrm.role];
+      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.crossCrm.role, hours: hMonthly, cost: costMonthly, qty: null, unit: null });
+    }
+    if (inputs.promotionMgmt) {
+      const h = w.promotionMgmt.monthlyHours;
+      const cost = h * rates[w.promotionMgmt.role];
+      lines.push({ key: "promotion", label: "Управление продвижением", phase: "monthly", role: w.promotionMgmt.role, hours: h, cost, qty: null, unit: null });
+    }
+    const finalLines = inputs.noMonthly ? lines.filter((l) => l.phase !== "monthly") : lines;
+    const sum = (phase) => finalLines.filter((l) => l.phase === phase).reduce((s, l) => s + l.cost, 0);
+    return { setup: sum("setup"), monthly: sum("monthly"), lines: finalLines };
+  }
+
+  // src/price.js
+  function round(x, step) {
+    if (!step || step <= 1) return Math.round(x);
+    return Math.round(x / step) * step;
+  }
+  function computePrice(cost, config2) {
+    const m = 1 + config2.targetMargin;
+    const lines = cost.lines.map((l) => {
+      let price;
+      if (typeof l.fixedPrice === "number") {
+        price = l.fixedPrice;
+      } else if (l.qty && l.qty > 0) {
+        const perUnit = Math.round(l.cost / l.qty * m);
+        price = perUnit * l.qty;
+      } else {
+        price = round(l.cost * m, config2.roundTo);
+      }
+      return { key: l.key, label: l.label, phase: l.phase, price };
+    });
+    const sum = (phase) => lines.filter((l) => l.phase === phase).reduce((s, l) => s + l.price, 0);
+    return { setup: sum("setup"), monthly: sum("monthly"), lines };
+  }
+
+  // src/guardrails.js
+  function checkMarket(price, config2) {
+    const setupCeiling = config2.market && config2.market.setupCeiling;
+    return {
+      monthlyOverMarket: price.monthly > config2.market.monthlyCeiling,
+      setupOverCeiling: setupCeiling != null && price.setup > setupCeiling
+    };
+  }
+
+  // src/engine.js
+  function pct(price, cost) {
+    return cost === 0 ? 0 : (price - cost) / cost;
+  }
+  function calculate(inputs, config2) {
+    const cost = computeCost(inputs, config2);
+    const price = computePrice(cost, config2);
+    const flooredSetup = Math.max(price.setup, config2.setupMin);
+    const setupMinApplied = flooredSetup > price.setup;
+    const setupMinAdjustment = flooredSetup - price.setup;
+    price.setup = flooredSetup;
+    const noMonthly = !!inputs.noMonthly;
+    const flooredMonthly = noMonthly ? 0 : Math.max(price.monthly, config2.minMonthly);
+    const minMonthlyApplied = !noMonthly && flooredMonthly > price.monthly;
+    const minMonthlyAdjustment = flooredMonthly - price.monthly;
+    price.monthly = flooredMonthly;
+    const margin = {
+      setupPct: pct(price.setup, cost.setup),
+      monthlyPct: pct(price.monthly, cost.monthly)
+    };
+    const guardrails = {
+      setupMinApplied,
+      setupMinAdjustment,
+      minMonthlyApplied,
+      minMonthlyAdjustment,
+      ...checkMarket(price, config2)
+    };
+    return {
+      inputs,
+      cost,
+      price,
+      margin,
+      guardrails
+    };
+  }
+
+  // src/clientView.js
+  var PLATFORM_NOTE = "Оплата Авито (размещение + продвижение) — отдельно, напрямую в Авито. В нашу цену не входит.";
+  var PRELIMINARY_NOTE = "Предварительный расчёт: при большом объёме и количестве факторов итог приблизительный — возможна скидка за объём, точную цену рассчитаем индивидуально.";
+  function priceOf(result, key) {
+    const l = result.price.lines.find((x) => x.key === key);
+    return l ? l.price : 0;
+  }
+  function costLineOf(result, key) {
+    return result.cost.lines.find((x) => x.key === key) || null;
+  }
+  function clientDetail(key, linePrice, costLine) {
+    if (costLine && costLine.qty > 0) {
+      const perUnit = Math.round(linePrice / costLine.qty);
+      const unitShort = costLine.unit === "объявление" ? "объявл" : costLine.unit;
+      return `${perUnit} ₽/${unitShort} × ${costLine.qty}`;
+    }
+    const map = {
+      placement_setup: "разовая настройка",
+      placement_setup_listing: "разовая настройка",
+      autoresponder_setup: "разовая настройка",
+      analytics_setup: "разовая настройка",
+      management: "ежемесячно",
+      autoresponder: "ежемесячно",
+      analytics: "ежемесячно",
+      promotion: "ежемесячно"
+    };
+    return map[key] || null;
+  }
+  function toClientView(result, config2) {
+    const breakdown = [];
+    breakdown.push({ label: "Анализ ниши и стратегия", setup: 0, note: "бесплатно", detail: "бесплатно" });
+    const contentLines = result.price.lines.filter((l) => l.key.startsWith("content#"));
+    const totalContentPrice = contentLines.reduce((s, l) => s + l.price, 0);
+    if (totalContentPrice > 0) {
+      const costContentLines = result.cost.lines.filter((l) => l.key.startsWith("content#"));
+      let detail;
+      if (contentLines.length === 1) {
+        const cl = costContentLines[0];
+        const perUnit = Math.round(contentLines[0].price / cl.qty);
+        detail = `${perUnit} ₽/объявл × ${cl.qty}`;
+      } else {
+        detail = contentLines.map((pl, i) => {
+          const cl = costContentLines[i];
+          const typeLabel = cl.label.replace(/^Создание контента — /, "");
+          const shortLabel = typeLabel.split(" / ")[0].split(" ")[0];
+          const perUnit = Math.round(pl.price / cl.qty);
+          return `${shortLabel} ${cl.qty}×${perUnit} ₽`;
+        }).join(" + ");
+      }
+      breakdown.push({ label: "Создание контента", setup: totalContentPrice, detail });
+    }
+    const plSetupPrice = priceOf(result, "placement_setup");
+    if (plSetupPrice > 0) {
+      breakdown.push({ label: "Настройка размещения", setup: plSetupPrice, detail: clientDetail("placement_setup", plSetupPrice, null) });
+    }
+    const plSetupListingCostLine = costLineOf(result, "placement_setup_listing");
+    const plSetupListingPrice = priceOf(result, "placement_setup_listing");
+    if (plSetupListingPrice > 0) {
+      breakdown.push({ label: "Размещение объявлений", setup: plSetupListingPrice, detail: clientDetail("placement_setup_listing", plSetupListingPrice, plSetupListingCostLine) });
+    }
+    const arSetupPrice = priceOf(result, "autoresponder_setup");
+    if (arSetupPrice > 0) {
+      breakdown.push({ label: "Настройка автоответчика", setup: arSetupPrice, detail: clientDetail("autoresponder_setup", arSetupPrice, null) });
+    }
+    const anSetupPrice = priceOf(result, "analytics_setup");
+    if (anSetupPrice > 0) {
+      breakdown.push({ label: "Подключение сквозной аналитики/CRM", setup: anSetupPrice, detail: clientDetail("analytics_setup", anSetupPrice, null) });
+    }
+    const mgmtPrice = priceOf(result, "management");
+    if (mgmtPrice > 0) {
+      breakdown.push({ label: "Ведение и оптимизация", monthly: mgmtPrice, detail: clientDetail("management", mgmtPrice, null) });
+    }
+    const autorespPrice = priceOf(result, "autoresponder");
+    if (autorespPrice > 0) {
+      breakdown.push({ label: "Автоответчик", monthly: autorespPrice, detail: clientDetail("autoresponder", autorespPrice, null) });
+    }
+    const analyticsPrice = priceOf(result, "analytics");
+    if (analyticsPrice > 0) {
+      breakdown.push({ label: "Аналитика", monthly: analyticsPrice, detail: clientDetail("analytics", analyticsPrice, null) });
+    }
+    const promoPrice = priceOf(result, "promotion");
+    if (promoPrice > 0) {
+      breakdown.push({ label: "Управление продвижением", monthly: promoPrice, detail: clientDetail("promotion", promoPrice, null) });
+    }
+    const isPreliminary = !!(result.guardrails.setupOverCeiling || result.guardrails.monthlyOverMarket);
+    return {
+      setup: result.price.setup,
+      monthly: result.price.monthly,
+      setupIsMinimum: result.guardrails.setupMinApplied,
+      monthlyIsMinimum: result.guardrails.minMonthlyApplied,
+      isPreliminary,
+      preliminaryNote: isPreliminary ? PRELIMINARY_NOTE : null,
+      breakdown,
+      platformNote: PLATFORM_NOTE
+    };
+  }
+
+  // src/presets.js
+  function computePresets(config2) {
+    return Object.entries(config2.presets).map(([key, preset]) => {
+      const result = calculate(preset.inputs, config2);
+      return {
+        key,
+        label: preset.label,
+        setup: result.price.setup,
+        monthly: result.price.monthly
+      };
+    });
+  }
+
+  // src/impacts.js
+  function computeImpacts(config2) {
+    const m = 1 + config2.targetMargin;
+    const r = config2.roundTo;
+    const rates = config2.rates;
+    const w = config2.work;
+    function price(cost) {
+      if (!r || r <= 1) return Math.round(cost * m);
+      return Math.round(cost * m / r) * r;
+    }
+    const contentPerListing = {};
+    for (const [type, costPerUnit] of Object.entries(config2.content.byType)) {
+      contentPerListing[type] = Math.round(costPerUnit * m);
+    }
+    const arBasicCost = w.autoresponder.basic.monthlyHours * rates[w.autoresponder.basic.role];
+    const arTrainMonthlyCost = w.autoresponder.trainable.monthlyHours * rates[w.autoresponder.trainable.role];
+    const arTrainSetupCost = w.autoresponder.trainable.setupHours * rates[w.autoresponder.trainable.role];
+    const autoresponder = {
+      basic: { monthly: price(arBasicCost) },
+      trainable: { monthly: price(arTrainMonthlyCost), setup: price(arTrainSetupCost) }
+    };
+    const anExtMonthlyCost = w.analytics.extended.monthlyHours * rates[w.analytics.extended.role];
+    const anCrmMonthlyCost = w.analytics.crossCrm.monthlyHours * rates[w.analytics.crossCrm.role];
+    const anCrmSetupCost = w.analytics.crossCrm.setupHours * rates[w.analytics.crossCrm.role];
+    const analytics = {
+      extended: { monthly: price(anExtMonthlyCost) },
+      crossCrm: { monthly: price(anCrmMonthlyCost), setup: price(anCrmSetupCost) }
+    };
+    const pl = config2.placement;
+    const placement = {
+      R1: { setup: pl.R1.setup },
+      R2: { setup: pl.R2.setup },
+      R3: { setup: pl.R3.setup },
+      R4: { setupPerListing: pl.R4.setupPerListing }
+    };
+    const promoMonthlyCost = w.promotionMgmt.monthlyHours * rates[w.promotionMgmt.role];
+    const promotionMgmt = { monthly: price(promoMonthlyCost) };
+    const perAccountMonthlyCost = w.management.monthlyHoursPerAccount * rates[w.management.role];
+    const perAccountMonthly = price(perAccountMonthlyCost);
+    return {
+      contentPerListing,
+      autoresponder,
+      analytics,
+      placement,
+      promotionMgmt,
+      perAccountMonthly
+    };
+  }
+
+  // config/pricing.config.js
+  var config = {
+    currency: "RUB",
+    rates: {
+      avitolog: 565,
+      // 2026-07-03: +13% (расходы) — было 500
+      analyst: 2260,
+      // +13% — было 2000
+      dev: 2260
+      // +13% — было 2000
+    },
+    targetMargin: 0.7,
+    // 2026-07-03: 0.6→0.7 (маржа подросла); с rates+13% и placement+20% даёт ~+20% цены клиенту
+    marginFloor: 0.5,
+    roundTo: 500,
+    content: {
+      // Себестоимость создания контента ₽/объявление по типу товара
+      byType: {
+        catalog: 28,
+        // Каталожный / расходники (трубы, крепёж, бытхимия) — 2026-07-03 +13% (было 25)
+        serial: 34,
+        // Серийный по модели (электроника, бытовая техника) — +13% (было 30)
+        unique: 56
+        // Уникальный / штучный (квартиры, авто, б/у вещи) — +12% (было 50)
+      },
+      typeLabels: {
+        catalog: "Каталожный / расходники",
+        serial: "Серийный по модели",
+        unique: "Уникальный / штучный"
+      },
+      typeExamples: {
+        catalog: "трубы, крепёж, книги, расходники, автохимия",
+        serial: "электроника, одежда, инструменты, запчасти",
+        unique: "квартиры, авто, услуги, мебель, б/у"
+      },
+      // Примечание: manual↔unique, auto↔serial, strongAuto↔catalog (для category-reference)
+      statusMultiplier: { own: 0, partial: 0.5, none: 1 }
+    },
+    placement: {
+      R1: { label: "Готовый фид", setup: 0, setupPerListing: 0 },
+      R2: { label: "Из прайс-таблицы", setup: 6e3, setupPerListing: 0 },
+      // 2026-07-03 +20% (было 5000)
+      R3: { label: "Сложная интеграция", setup: 3e4, setupPerListing: 0 },
+      // +20% (было 25000)
+      R4: { label: "Ручное размещение", setup: 0, setupPerListing: 18 }
+      // +20% (было 15)
+    },
+    work: {
+      placement: null,
+      management: { monthlyHoursPerAccount: 5, monthlyHoursPerListing: 0.05, role: "avitolog" },
+      autoresponder: {
+        none: {},
+        basic: { monthlyHours: 2, role: "avitolog" },
+        trainable: { setupHours: 4, monthlyHours: 2.5, role: "dev" }
+      },
+      analytics: {
+        basic: { monthlyHours: 0, role: "analyst" },
+        extended: { monthlyHours: 3.75, role: "analyst" },
+        crossCrm: { setupHours: 20, monthlyHours: 9.375, role: "dev" }
+      },
+      promotionMgmt: { monthlyHours: 6, role: "avitolog" }
+    },
+    setupMin: 18e3,
+    minMonthly: 12e3,
+    market: { monthlyCeiling: 8e4, setupCeiling: 8e4 },
+    defaultRegionMode: "repeat",
+    regionModes: {
+      single: { label: "Одно объявление на все регионы", note: "Одно объявление показывается сразу в нескольких регионах — число регионов на цену не влияет (доступно не во всех категориях Авито)." },
+      repeat: { label: "Одно объявление, размещаем в каждом регионе", note: "Контент создаётся один раз, но публикуется отдельно в каждом регионе — растёт число размещений." },
+      distinct: { label: "Свои объявления под каждый регион", note: "Под каждый регион — своё объявление с отдельным контентом: нужно в категориях, где Авито не даёт дублировать один и тот же товар. Растёт и объём контента, и число размещений." }
+    },
+    presets: {
+      start: {
+        label: "Старт",
+        sub: "До 20 объявлений · 1 регион · обычный автоответчик · базовая аналитика",
+        inputs: {
+          items: [{ type: "serial", listings: 20, contentStatus: "none" }],
+          accounts: 1,
+          regions: 1,
+          regionMode: "single",
+          placementLevel: "R2",
+          autoresponder: "basic",
+          analytics: "basic",
+          promotionMgmt: false
+        }
+      },
+      business: {
+        label: "Бизнес",
+        sub: "До 60 объявлений · 3 региона · обучаемый автоответчик · расширенная аналитика · продвижение",
+        inputs: {
+          items: [{ type: "serial", listings: 60, contentStatus: "none" }],
+          accounts: 1,
+          regions: 3,
+          regionMode: "repeat",
+          placementLevel: "R2",
+          autoresponder: "trainable",
+          analytics: "extended",
+          promotionMgmt: true
+        }
+      },
+      premium: {
+        label: "Премиум",
+        sub: "До 200 объявлений · 2 аккаунта · 5 регионов · сквозная аналитика + CRM · продвижение",
+        inputs: {
+          items: [{ type: "serial", listings: 200, contentStatus: "none" }],
+          accounts: 2,
+          regions: 5,
+          regionMode: "repeat",
+          placementLevel: "R3",
+          autoresponder: "trainable",
+          analytics: "crossCrm",
+          promotionMgmt: true
+        }
+      }
+    }
+  };
+
+  // web/widget.js
+  function formatRub(n) {
+    return new Intl.NumberFormat("ru-RU").format(n).replace(/[    ]/g, " ") + " ₽";
+  }
+  function buildRows(view) {
+    return view.breakdown.map((b) => {
+      const isSetupPhase = b.setup != null;
+      const isMonthlyPhase = b.monthly != null;
+      const atMin = isSetupPhase && view.setupIsMinimum || isMonthlyPhase && view.monthlyIsMinimum;
+      if (atMin) {
+        let suffix = "";
+        if (b.note) {
+          suffix = ` — ${b.note}`;
+        } else if (b.label === "Создание контента" && b.detail) {
+          const perUnit = b.detail.replace(/ × \d+$/, "");
+          suffix = ` — ${perUnit}`;
+        }
+        return { label: b.label + suffix, value: null, labelOnly: true };
+      }
+      let value;
+      if (b.note) value = b.note;
+      else if (isSetupPhase) value = formatRub(b.setup) + " разово";
+      else value = formatRub(b.monthly) + "/мес";
+      return { label: b.label, value, labelOnly: false };
+    });
+  }
+  function applyPreset(form, presetInputs, addItemRowFn) {
+    const el = form.elements;
+    if (el["accounts"]) el["accounts"].value = String(presetInputs.accounts);
+    if (el["regions"]) el["regions"].value = String(presetInputs.regions);
+    if (el["placementLevel"]) el["placementLevel"].value = presetInputs.placementLevel;
+    if (el["regionMode"] && presetInputs.regionMode) el["regionMode"].value = presetInputs.regionMode;
+    if (el["autoresponder"]) el["autoresponder"].value = presetInputs.autoresponder;
+    if (el["analytics"]) el["analytics"].value = presetInputs.analytics;
+    if (el["promotionMgmt"]) el["promotionMgmt"].checked = presetInputs.promotionMgmt;
+    const container = form.querySelector("#items-container");
+    if (container && addItemRowFn && presetInputs.items) {
+      container.innerHTML = "";
+      presetInputs.items.forEach((item) => addItemRowFn(item));
+    }
+  }
+  function readItems(form) {
+    const container = form.querySelector("#items-container");
+    if (!container) return [{ type: "serial", listings: 10, contentStatus: "none" }];
+    const rows = container.querySelectorAll(".item-row");
+    if (rows.length === 0) return [{ type: "serial", listings: 10, contentStatus: "none" }];
+    return Array.from(rows).map((row) => ({
+      type: row.querySelector('select[name="itemType"]').value || "serial",
+      listings: Number(row.querySelector('input[name="itemListings"]').value) || 1,
+      contentStatus: row.querySelector('select[name="itemContentStatus"]').value || "none"
+    }));
+  }
+  function readInputs(form) {
+    const num = (name) => Number(form.elements[name].value);
+    const val = (name) => form.elements[name].value;
+    const bool = (name) => form.elements[name] ? form.elements[name].checked : false;
+    const regionMode = form.elements["regionMode"] ? form.elements["regionMode"].value : config.defaultRegionMode || "repeat";
+    return {
+      items: readItems(form),
+      accounts: num("accounts"),
+      regions: num("regions"),
+      regionMode,
+      placementLevel: val("placementLevel"),
+      autoresponder: val("autoresponder"),
+      analytics: val("analytics"),
+      promotionMgmt: bool("promotionMgmt"),
+      noMonthly: bool("noMonthly")
+    };
+  }
+  function addItemRow(container, item, recalc) {
+    const row = document.createElement("div");
+    row.className = "item-row";
+    row.style.cssText = "display:flex;gap:.4rem;align-items:center;margin-bottom:.4rem;flex-wrap:wrap";
+    const typeOptions = Object.entries(config.content.typeLabels).map(([v, label]) => {
+      const ex = config.content.typeExamples && config.content.typeExamples[v];
+      const optLabel = ex ? `${label} (${ex.split(",").slice(0, 3).join(",")})` : label;
+      return `<option value="${v}"${item && item.type === v ? " selected" : ""}>${optLabel}</option>`;
+    }).join("");
+    row.innerHTML = `
+    <select name="itemType" style="flex:1;min-width:140px">${typeOptions}</select>
+    <input type="number" name="itemListings" value="${item ? item.listings : 10}" min="1" style="width:70px">
+    <select name="itemContentStatus" style="flex:1;min-width:110px">
+      <option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>Есть свой</option>
+      <option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>Частично</option>
+      <option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>Делаем мы</option>
+    </select>
+    <button type="button" class="item-remove" style="flex:0 0 auto;padding:0 .4rem;color:#c00;background:none;border:none;cursor:pointer;font-size:1rem" title="Удалить">✕</button>`;
+    row.querySelector(".item-remove").addEventListener("click", () => {
+      if (container.querySelectorAll(".item-row").length > 1) {
+        row.remove();
+        recalc();
+      }
+    });
+    row.querySelectorAll("select, input").forEach((el) => el.addEventListener("input", recalc));
+    container.appendChild(row);
+    return row;
+  }
+  function renderPresets(presetsContainer, form, recalc, cfg, addItemRowBound) {
+    const presets = computePresets(cfg);
+    presetsContainer.innerHTML = presets.map(
+      (p) => `<div class="ave-preset-card" data-key="${p.key}"><div class="ave-preset-label">${p.label}</div>` + (cfg.presets[p.key] && cfg.presets[p.key].sub ? `<div class="ave-preset-sub">${cfg.presets[p.key].sub}</div>` : "") + `<div class="ave-preset-price">${formatRub(p.setup)} разово</div><div class="ave-preset-monthly">${formatRub(p.monthly)}/мес</div><button type="button" class="ave-preset-btn" data-key="${p.key}">Настроить</button></div>`
+    ).join("");
+    presetsContainer.querySelectorAll(".ave-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-key");
+        const preset = cfg.presets[key];
+        if (preset) {
+          applyPreset(form, preset.inputs, addItemRowBound);
+          recalc();
+        }
+      });
+    });
+  }
+  function render(view, out) {
+    const rows = buildRows(view);
+    let setupPackageItems = [];
+    let monthlyPackageItems = [];
+    let itemizedRows = [];
+    for (const r of rows) {
+      if (r.labelOnly) {
+        const b = view.breakdown.find((b2) => {
+          const suffix = b2.note ? ` — ${b2.note}` : "";
+          return b2.label + suffix === r.label;
+        });
+        if (b && b.setup != null) setupPackageItems.push(r.label);
+        else monthlyPackageItems.push(r.label);
+      } else {
+        itemizedRows.push(r);
+      }
+    }
+    const setupSublabel = view.setupIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
+    const monthlySublabel = view.monthlyIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
+    let breakdownHtml = "";
+    if (setupPackageItems.length > 0) {
+      breakdownHtml += `<div class="ave-pkg-header">Входит в пакет (настройка):</div>`;
+      breakdownHtml += setupPackageItems.map((l) => `<div class="ave-pkg-item">✓ ${l}</div>`).join("");
+    }
+    if (monthlyPackageItems.length > 0) {
+      breakdownHtml += `<div class="ave-pkg-header">Входит в пакет (ведение):</div>`;
+      breakdownHtml += monthlyPackageItems.map((l) => `<div class="ave-pkg-item">✓ ${l}</div>`).join("");
+    }
+    breakdownHtml += itemizedRows.map(
+      (r) => `<div class="row"><span>${r.label}</span><b>${r.value}</b></div>`
+    ).join("");
+    out.innerHTML = `
+    <div class="totals">
+      <div class="total"><span>Настройка</span><b>${formatRub(view.setup)}</b>${setupSublabel}</div>
+      <div class="total"><span>Ведение</span><b>${formatRub(view.monthly)}/мес</b>${monthlySublabel}</div>
+    </div>
+    <div class="breakdown">${breakdownHtml}</div>
+    ${view.isPreliminary ? `<div class="note ave-preliminary">${view.preliminaryNote}</div>` : ""}
+    <div class="note">${view.platformNote}</div>
+    <button type="button" class="cta" id="ave-cta">Получить точный расчёт</button>`;
+  }
+  function buildPlacementHint(cfg, f) {
+    const pl = cfg.placement;
+    const parts = [];
+    parts.push(`R1 — ${pl.R1.label}: Бесплатно (готовый фид)`);
+    parts.push(`R2 — ${pl.R2.label}: Настройка ${f(pl.R2.setup)}`);
+    parts.push(`R3 — ${pl.R3.label}: Настройка ${f(pl.R3.setup)}`);
+    parts.push(`R4 — ${pl.R4.label}: За объявление ${pl.R4.setupPerListing} ₽`);
+    return parts.join(" · ");
+  }
+  function buildHints(cfg) {
+    const imp = computeImpacts(cfg);
+    const f = formatRub;
+    return {
+      itemType: `Каталожный — ${config.content.typeExamples.catalog} → ${f(imp.contentPerListing.catalog)}/объявл · Серийный — ${config.content.typeExamples.serial} → ${f(imp.contentPerListing.serial)}/объявл · Уникальный — ${config.content.typeExamples.unique} → ${f(imp.contentPerListing.unique)}/объявл`,
+      itemContentStatus: `Есть свой ×0 · Частично ×½ · Делаем мы — полная ставка`,
+      accounts: `Каждый аккаунт +${f(imp.perAccountMonthly)}/мес к ведению`,
+      regions: `Влияет на цену по выбранному режиму размещения по регионам (см. ниже)`,
+      placementLevel: buildPlacementHint(cfg, f),
+      autoresponder: `Обычный +${f(imp.autoresponder.basic.monthly)}/мес · Обучаемый +${f(imp.autoresponder.trainable.monthly)}/мес +${f(imp.autoresponder.trainable.setup)} настройка`,
+      analytics: `Расширенная +${f(imp.analytics.extended.monthly)}/мес · Сквозная+CRM +${f(imp.analytics.crossCrm.monthly)}/мес +${f(imp.analytics.crossCrm.setup)} настройка`,
+      promotionMgmt: `Ведём продвижение Авито в рамках вашего бюджета — +${f(imp.promotionMgmt.monthly)}/мес. Сам бюджет Авито — отдельно.`
+    };
+  }
+  function mount(form, out, presetsContainer) {
+    const container = document.createElement("div");
+    container.id = "items-container";
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.textContent = "+ добавить тип товара";
+    addBtn.style.cssText = "font-size:.8rem;margin-bottom:.5rem;cursor:pointer";
+    const itemsSection = document.createElement("div");
+    itemsSection.innerHTML = '<label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.3rem">Товар</label>';
+    const hints = buildHints(config);
+    const itemHint = document.createElement("small");
+    itemHint.className = "param-hint";
+    itemHint.textContent = hints.itemType;
+    itemsSection.appendChild(container);
+    itemsSection.appendChild(addBtn);
+    itemsSection.appendChild(itemHint);
+    function setHint(name, text) {
+      const el = form.elements[name];
+      if (!el) return;
+      let hint = el.closest("label") ? el.closest("label").nextElementSibling : null;
+      if (hint && hint.classList.contains("param-hint")) {
+        hint.textContent = text;
+      }
+    }
+    form.insertBefore(itemsSection, form.firstChild);
+    const recalc = () => {
+      const inputs = readInputs(form);
+      render(toClientView(calculate(inputs, config), config), out);
+      const noteEl = document.getElementById("ave-regionmode-note");
+      if (noteEl) {
+        const rm = config.regionModes && config.regionModes[inputs.regionMode];
+        noteEl.textContent = rm ? rm.note : "";
+      }
+    };
+    const addItemRowBound = (item) => addItemRow(container, item, recalc);
+    addItemRowBound({ type: "serial", listings: 10, contentStatus: "none" });
+    addBtn.addEventListener("click", () => {
+      addItemRowBound(null);
+      recalc();
+    });
+    if (presetsContainer) {
+      renderPresets(presetsContainer, form, recalc, config, addItemRowBound);
+    }
+    form.addEventListener("input", recalc);
+    recalc();
+  }
+
+  // web/widget-entry.js
+  function init() {
+    const form = document.getElementById("ave-form");
+    const out = document.getElementById("ave-out");
+    const presets = document.getElementById("ave-presets");
+    if (form && out) mount(form, out, presets);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+<script>
+// ===== Мост на шину AVZ: результат расчёта → window.AVZ.calc + событие avz:calc =====
+// Совместимо с AVZ.captureCalc из 00-foundation (dispatchEvent('avz:calc')). Слушает форма #lead (08-lead).
+// Поскольку движок выше пересчитывает #ave-out синхронно (input/клик по пресету/CTA), а не через
+// собственное событие, снимаем итог MutationObserver'ом за #ave-out — это ловит вообще любой пересчёт,
+// включая самый первый (при монтировании) и смену пресета.
+(function () {
+  "use strict";
+  var sec = document.getElementById('calc');
+  var out = document.getElementById('ave-out');
+  if (!sec || !out) return;
+
+  function readTotals() {
+    var b = out.querySelectorAll('.totals .total b');
+    if (b.length < 2) return null;
+    return { setupText: b[0].textContent.trim(), monthlyText: b[1].textContent.trim() };
+  }
+
+  var touched = false; // пользователь трогал калькулятор (input/пресет/CTA) — как calcTouched в прототипе
+  var formEl = document.getElementById('ave-form');
+  if (formEl) {
+    ['input', 'change'].forEach(function (t) {
+      formEl.addEventListener(t, function () { touched = true; }, true);
+    });
+    // Enter в числовом поле не должен сабмитить/перезагружать страницу (бандл движка не блокирует сам)
+    formEl.addEventListener('submit', function (e) { e.preventDefault(); });
+  }
+  sec.addEventListener('click', function (e) {
+    if (e.target && e.target.closest && (e.target.closest('.ave-preset-btn') || e.target.closest('#ave-cta'))) touched = true;
+  }, true);
+
+  // Полный снапшот в формате captureCalc() прототипа (site/assets/site.js:114) — тот же контракт
+  // calc_full разбирает бэкенд lead.py/alert.py («Что настроил клиент» в Telegram), а totals[]
+  // использует 08-lead для короткого эха в форме.
+  function fullSnapshot() {
+    var form = document.getElementById('ave-form');
+    function optText(el) { return (el && el.selectedOptions && el.selectedOptions[0]) ? el.selectedOptions[0].textContent.trim() : (el ? el.value : ''); }
+    function sel(name) { return form ? optText(form.elements[name]) : ''; }
+    function v(name) { var el = form && form.elements[name]; return el ? el.value : ''; }
+    function chk(name) { var el = form && form.elements[name]; return el ? !!el.checked : false; }
+    var items = [];
+    if (form) [].forEach.call(form.querySelectorAll('.item-row'), function (row) {
+      items.push({
+        type: optText(row.querySelector('[name="itemType"]')),
+        listings: Number((row.querySelector('[name="itemListings"]') || {}).value) || 0,
+        content: optText(row.querySelector('[name="itemContentStatus"]'))
+      });
+    });
+    var totals = [];
+    [].forEach.call(out.querySelectorAll('.totals .total'), function (t) {
+      var s = t.querySelector('span'), b = t.querySelector('b');
+      totals.push(((s ? s.textContent.trim() : '') + ' ' + (b ? b.textContent.trim() : '')).trim());
+    });
+    var breakdown = [];
+    [].forEach.call(out.querySelectorAll('.ave-pkg-item'), function (r) { breakdown.push(r.textContent.trim()); });
+    [].forEach.call(out.querySelectorAll('.breakdown .row'), function (r) {
+      var s = r.querySelector('span'), b = r.querySelector('b');
+      if (s && b) breakdown.push(s.textContent.trim() + ' — ' + b.textContent.trim());
+    });
+    return {
+      touched: touched,
+      settings: {
+        accounts: v('accounts'), regions: v('regions'),
+        regionMode: sel('regionMode'), placement: sel('placementLevel'),
+        autoresponder: sel('autoresponder'), analytics: sel('analytics'),
+        promotion: chk('promotionMgmt'), oneOff: chk('noMonthly'),
+        items: items
+      },
+      totals: totals,
+      breakdown: breakdown.slice(0, 30)
+    };
+  }
+
+  function emit(extra) {
+    var t = readTotals();
+    if (!t) return;
+    var data = fullSnapshot();
+    data.setup = t.setupText;     // краткие поля — совместимость с ранними потребителями снапшота
+    data.monthly = t.monthlyText;
+    data.source = 'calc';
+    if (extra) { for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) data[k] = extra[k]; }
+    window.AVZ = window.AVZ || {};
+    window.AVZ.calc = data; // снимок для блоков, монтирующихся позже (08-lead читает на submit)
+    if (typeof window.AVZ.captureCalc === 'function') {
+      window.AVZ.captureCalc(data); // шлёт CustomEvent('avz:calc', {detail: data})
+    } else {
+      document.dispatchEvent(new CustomEvent('avz:calc', { detail: data }));
+    }
+  }
+
+  if ('MutationObserver' in window) {
+    new MutationObserver(function () { emit(); }).observe(out, { childList: true, subtree: true });
+  } else {
+    // старый браузер без MutationObserver — считаем хотя бы по input/клику
+    document.getElementById('ave-form') && document.getElementById('ave-form').addEventListener('input', function () { setTimeout(emit, 0); });
+  }
+
+  // CTA «Получить точный расчёт» пересоздаётся движком при каждом рендере — делегируем клик на секцию,
+  // помечаем снимок как cta:true и мягко доскроллим к форме заявки (эхо в неё кладёт уже 08-lead).
+  sec.addEventListener('click', function (e) {
+    var cta = e.target && e.target.closest ? e.target.closest('#ave-cta') : null;
+    if (!cta) return;
+    emit({ cta: true });
+    var dest = document.getElementById('lead');
+    if (dest && dest.scrollIntoView) dest.scrollIntoView({ behavior: (window.AVZ && window.AVZ.reducedMotion) ? 'auto' : 'smooth' });
+  });
+
+  if (window.AVZ && typeof window.AVZ.reveal === 'function') {
+    window.AVZ.reveal(sec.querySelectorAll('.avz-reveal'));
+  } else if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // фундамента (00) на странице ещё нет — раскрываем сами через IntersectionObserver
+    var els = [].slice.call(sec.querySelectorAll('.avz-reveal'));
+    if ('IntersectionObserver' in window && els.length) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('avz-in'); io.unobserve(en.target); } });
+      }, { threshold: 0.2 });
+      els.forEach(function (el) { io.observe(el); });
+    } else {
+      els.forEach(function (el) { el.classList.add('avz-in'); });
+    }
+  } else {
+    sec.querySelectorAll('.avz-reveal').forEach(function (el) { el.classList.add('avz-in'); });
+  }
+})();
+</script>
+
+</body>
+</html>
