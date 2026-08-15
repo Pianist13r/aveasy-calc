@@ -3,15 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Калькулятор стоимости ведения Авито — Aveasy</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Калькулятор Aveasy — внутренний расчёт</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>body{margin:0;background:#f0f3f8}</style>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0f3f8}
+.avz-int-banner{
+  background:#0a1828;color:#fff;font:700 13px/1.4 'Manrope','Segoe UI',Arial,sans-serif;
+  padding:10px 16px;text-align:center;letter-spacing:.02em;
+}
+.avz-int-banner b{color:#00d4ff}
+@media print{.avz-int-banner{display:none}}
+</style>
+<style>
+/* Внутренний слой страницы калькулятора. Палитра — как в блоке 05-pricing (avz-*). */
+.avz-int{
+  background:#fff;color:#0a1828;
+  font-family:'Manrope','Segoe UI',Arial,sans-serif;
+  padding:clamp(32px,5vw,64px) 0;
+  border-top:1px solid rgba(10,24,40,.1);
+}
+.avz-int-wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,3vw,32px)}
+
+.avz-int-head{display:flex;gap:20px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px}
+.avz-int-eyebrow{
+  font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:#0055cc;margin-bottom:6px;
+}
+.avz-int-title{margin:0;font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-.02em}
+
+.avz-int-actions{display:flex;gap:8px;flex-wrap:wrap}
+.avz-int-btn{
+  font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  padding:10px 16px;border-radius:10px;
+  border:1px solid rgba(10,24,40,.16);background:#fff;color:#0a1828;
+  transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
+}
+.avz-int-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(10,24,40,.1)}
+.avz-int-btn-main{background:linear-gradient(135deg,#0055cc,#003d99);color:#fff;border-color:transparent}
+.avz-int-btn-client{background:#0a1828;color:#fff;border-color:transparent}
+
+.avz-int-status{
+  margin:0 0 16px;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
+  background:#e8f5ec;color:#0a7d3f;
+}
+.avz-int-status-warn{background:#fff6e0;color:#7a4b00}
+
+.avz-int-block{margin-bottom:22px}
+
+.avz-int-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.avz-int-card{background:#f0f3f8;border-radius:14px;padding:16px 18px}
+.avz-int-card-strong{background:#0a1828;color:#fff}
+.avz-int-card-label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#5a6b80}
+.avz-int-card-strong .avz-int-card-label{color:rgba(255,255,255,.66)}
+.avz-int-card-value{font-size:clamp(22px,2.6vw,30px);font-weight:800;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.avz-int-card-sub{font-size:12.5px;font-weight:600;color:#5a6b80}
+.avz-int-card-strong .avz-int-card-sub{color:rgba(255,255,255,.66)}
+
+.avz-int-warn{
+  background:#fff6e0;border:1px solid rgba(180,120,0,.35);color:#7a4b00;
+  border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;line-height:1.5;
+}
+.avz-int-warn div + div{margin-top:6px}
+
+.avz-int-sec{
+  font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#5a6b80;
+  padding-bottom:8px;border-bottom:1px solid rgba(10,24,40,.14);margin:26px 0 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.avz-int-reset{
+  font:inherit;font-size:12px;font-weight:700;text-transform:none;letter-spacing:0;
+  cursor:pointer;padding:6px 12px;border-radius:8px;
+  border:1px solid rgba(10,24,40,.16);background:#fff;color:#0a1828;
+}
+.avz-int-note{margin:0 0 14px;font-size:13px;line-height:1.5;color:#5a6b80;max-width:70ch}
+
+.avz-int-params{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 24px}
+.avz-int-param{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.avz-int-param span{font-size:12px;font-weight:700;color:#5a6b80}
+.avz-int-param b{font-weight:600}
+
+.avz-int-scroll{overflow-x:auto}
+.avz-int-table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:620px}
+.avz-int-table th{
+  text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:#5a6b80;padding:0 8px 8px;border-bottom:1px solid rgba(10,24,40,.14);
+}
+.avz-int-table td{padding:9px 8px;border-bottom:1px solid rgba(10,24,40,.07);vertical-align:top}
+.avz-int-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.avz-int-price{font-weight:700}
+.avz-int-low{color:#b3261e;font-weight:700}
+.avz-int-group td{
+  font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0055cc;
+  padding-top:16px;border-bottom:none;
+}
+.avz-int-label{display:block;font-weight:600}
+.avz-int-detail{display:block;font-size:12.5px;color:#5a6b80;margin-top:2px}
+
+.avz-int-model{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px 20px}
+.avz-int-field{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.avz-int-field-label{font-weight:700;color:#5a6b80}
+.avz-int-field-input{display:flex;align-items:center;gap:6px}
+.avz-int-field input{
+  font:inherit;font-size:14px;font-weight:600;padding:8px 10px;width:100%;max-width:150px;
+  border:1px solid rgba(10,24,40,.16);border-radius:8px;background:#fff;color:#0a1828;
+}
+.avz-int-field-input i{font-style:normal;font-size:12.5px;font-weight:600;color:#5a6b80}
+.avz-int-field-changed input{border-color:#0055cc;box-shadow:0 0 0 3px rgba(0,85,204,.12)}
+.avz-int-field-base{font-size:12px;font-weight:600;color:#0055cc}
+
+@media (max-width:760px){
+  .avz-int-cards{grid-template-columns:1fr}
+  .avz-int-head{align-items:flex-start}
+}
+
+@media print{
+  .avz-int-actions,.avz-int-reset,.avz-int-status{display:none !important}
+  .avz-int{padding:0;border-top:none}
+  .avz-int-field input{border:none;padding:0}
+  .avz-pricing{padding:0}
+}
+
+</style>
 </head>
-<body><!-- avz 05-pricing «Тарифы и стоимость» — калькулятор PIA-279 вместо тарифной сетки.
+<body>
+<div class="avz-int-banner">Внутренний инструмент Aveasy — <b>себестоимость и маржа видны на этой странице</b>. Клиенту отправляйте выгрузку «Для клиента», а не ссылку.</div>
+<!-- avz 05-pricing «Тарифы и стоимость» — калькулятор PIA-279 вместо тарифной сетки.
   T123 для Tilda, самодостаточный (см. site-tilda/README.md + docs/site-relaunch/tilda-redesign-concept.md, п.6).
   Движок — верстка/логика PIA-279 (core/pricing), инлайн ИЗ ГОТОВОГО БАНДЛА site/assets/calc.bundle.js
   (собран esbuild'ом из web/widget-entry.js, скопирован сюда БЕЗ ИЗМЕНЕНИЙ — см. комментарий перед бандлом).
@@ -322,14 +442,271 @@
 })();
 </script>
 
+<!-- бандл движка вырезан сборкой: ниже подставлен свежий, собранный из core/pricing -->
+
 <script>
-// ===== Движок калькулятора PIA-279 — БАНДЛ БЕЗ ИЗМЕНЕНИЙ =====
-// Инлайн содержимого site/assets/calc.bundle.js (esbuild --bundle --format=iife из core/pricing/web/widget-entry.js).
-// Цены/ставки/пресеты — из core/pricing/config/pricing.config.js, копия не редактировалась.
-// Пересборка при обновлении движка: cd core/pricing && ./node_modules/.bin/esbuild web/widget-entry.js
-//   --bundle --format=iife --charset=utf8 --outfile=../../site/assets/calc.bundle.js
-// — и этот же вывод скопировать сюда целиком (весь блок ниже, от "(() => {" до "})();").
+// ===== Мост на шину AVZ: результат расчёта → window.AVZ.calc + событие avz:calc =====
+// Совместимо с AVZ.captureCalc из 00-foundation (dispatchEvent('avz:calc')). Слушает форма #lead (08-lead).
+// Поскольку движок выше пересчитывает #ave-out синхронно (input/клик по пресету/CTA), а не через
+// собственное событие, снимаем итог MutationObserver'ом за #ave-out — это ловит вообще любой пересчёт,
+// включая самый первый (при монтировании) и смену пресета.
+(function () {
+  "use strict";
+  var sec = document.getElementById('calc');
+  var out = document.getElementById('ave-out');
+  if (!sec || !out) return;
+
+  function readTotals() {
+    var b = out.querySelectorAll('.totals .total b');
+    if (b.length < 2) return null;
+    return { setupText: b[0].textContent.trim(), monthlyText: b[1].textContent.trim() };
+  }
+
+  var touched = false; // пользователь трогал калькулятор (input/пресет/CTA) — как calcTouched в прототипе
+  var formEl = document.getElementById('ave-form');
+  if (formEl) {
+    ['input', 'change'].forEach(function (t) {
+      formEl.addEventListener(t, function () { touched = true; }, true);
+    });
+    // Enter в числовом поле не должен сабмитить/перезагружать страницу (бандл движка не блокирует сам)
+    formEl.addEventListener('submit', function (e) { e.preventDefault(); });
+  }
+  sec.addEventListener('click', function (e) {
+    if (e.target && e.target.closest && (e.target.closest('.ave-preset-btn') || e.target.closest('#ave-cta'))) touched = true;
+  }, true);
+
+  // Полный снапшот в формате captureCalc() прототипа (site/assets/site.js:114) — тот же контракт
+  // calc_full разбирает бэкенд lead.py/alert.py («Что настроил клиент» в Telegram), а totals[]
+  // использует 08-lead для короткого эха в форме.
+  function fullSnapshot() {
+    var form = document.getElementById('ave-form');
+    function optText(el) { return (el && el.selectedOptions && el.selectedOptions[0]) ? el.selectedOptions[0].textContent.trim() : (el ? el.value : ''); }
+    function sel(name) { return form ? optText(form.elements[name]) : ''; }
+    function v(name) { var el = form && form.elements[name]; return el ? el.value : ''; }
+    function chk(name) { var el = form && form.elements[name]; return el ? !!el.checked : false; }
+    var items = [];
+    if (form) [].forEach.call(form.querySelectorAll('.item-row'), function (row) {
+      items.push({
+        type: optText(row.querySelector('[name="itemType"]')),
+        listings: Number((row.querySelector('[name="itemListings"]') || {}).value) || 0,
+        content: optText(row.querySelector('[name="itemContentStatus"]'))
+      });
+    });
+    var totals = [];
+    [].forEach.call(out.querySelectorAll('.totals .total'), function (t) {
+      var s = t.querySelector('span'), b = t.querySelector('b');
+      totals.push(((s ? s.textContent.trim() : '') + ' ' + (b ? b.textContent.trim() : '')).trim());
+    });
+    var breakdown = [];
+    [].forEach.call(out.querySelectorAll('.ave-pkg-item'), function (r) { breakdown.push(r.textContent.trim()); });
+    [].forEach.call(out.querySelectorAll('.breakdown .row'), function (r) {
+      var s = r.querySelector('span'), b = r.querySelector('b');
+      if (s && b) breakdown.push(s.textContent.trim() + ' — ' + b.textContent.trim());
+    });
+    return {
+      touched: touched,
+      settings: {
+        accounts: v('accounts'), regions: v('regions'),
+        regionMode: sel('regionMode'), placement: sel('placementLevel'),
+        autoresponder: sel('autoresponder'), analytics: sel('analytics'),
+        promotion: chk('promotionMgmt'), oneOff: chk('noMonthly'),
+        items: items
+      },
+      totals: totals,
+      breakdown: breakdown.slice(0, 30)
+    };
+  }
+
+  function emit(extra) {
+    var t = readTotals();
+    if (!t) return;
+    var data = fullSnapshot();
+    data.setup = t.setupText;     // краткие поля — совместимость с ранними потребителями снапшота
+    data.monthly = t.monthlyText;
+    data.source = 'calc';
+    if (extra) { for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) data[k] = extra[k]; }
+    window.AVZ = window.AVZ || {};
+    window.AVZ.calc = data; // снимок для блоков, монтирующихся позже (08-lead читает на submit)
+    if (typeof window.AVZ.captureCalc === 'function') {
+      window.AVZ.captureCalc(data); // шлёт CustomEvent('avz:calc', {detail: data})
+    } else {
+      document.dispatchEvent(new CustomEvent('avz:calc', { detail: data }));
+    }
+  }
+
+  if ('MutationObserver' in window) {
+    new MutationObserver(function () { emit(); }).observe(out, { childList: true, subtree: true });
+  } else {
+    // старый браузер без MutationObserver — считаем хотя бы по input/клику
+    document.getElementById('ave-form') && document.getElementById('ave-form').addEventListener('input', function () { setTimeout(emit, 0); });
+  }
+
+  // CTA «Получить точный расчёт» пересоздаётся движком при каждом рендере — делегируем клик на секцию,
+  // помечаем снимок как cta:true и мягко доскроллим к форме заявки (эхо в неё кладёт уже 08-lead).
+  sec.addEventListener('click', function (e) {
+    var cta = e.target && e.target.closest ? e.target.closest('#ave-cta') : null;
+    if (!cta) return;
+    emit({ cta: true });
+    var dest = document.getElementById('lead');
+    if (dest && dest.scrollIntoView) dest.scrollIntoView({ behavior: (window.AVZ && window.AVZ.reducedMotion) ? 'auto' : 'smooth' });
+  });
+
+  if (window.AVZ && typeof window.AVZ.reveal === 'function') {
+    window.AVZ.reveal(sec.querySelectorAll('.avz-reveal'));
+  } else if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // фундамента (00) на странице ещё нет — раскрываем сами через IntersectionObserver
+    var els = [].slice.call(sec.querySelectorAll('.avz-reveal'));
+    if ('IntersectionObserver' in window && els.length) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('avz-in'); io.unobserve(en.target); } });
+      }, { threshold: 0.2 });
+      els.forEach(function (el) { io.observe(el); });
+    } else {
+      els.forEach(function (el) { el.classList.add('avz-in'); });
+    }
+  } else {
+    sec.querySelectorAll('.avz-reveal').forEach(function (el) { el.classList.add('avz-in'); });
+  }
+})();
+</script>
+
+<div id="avz-internal-host"></div>
+<script>
 (() => {
+  // config/pricing.config.js
+  var config = {
+    currency: "RUB",
+    rates: {
+      avitolog: 565,
+      // 2026-07-03: +13% (расходы) — было 500
+      analyst: 2260,
+      // +13% — было 2000
+      dev: 2260
+      // +13% — было 2000
+    },
+    targetMargin: 0.7,
+    // 2026-07-03: 0.6→0.7 (маржа подросла); с rates+13% и placement+20% даёт ~+20% цены клиенту
+    marginFloor: 0.5,
+    roundTo: 500,
+    content: {
+      // Себестоимость создания контента ₽/объявление по типу товара
+      byType: {
+        catalog: 28,
+        // Каталожный / расходники (трубы, крепёж, бытхимия) — 2026-07-03 +13% (было 25)
+        serial: 34,
+        // Серийный по модели (электроника, бытовая техника) — +13% (было 30)
+        unique: 56
+        // Уникальный / штучный (квартиры, авто, б/у вещи) — +12% (было 50)
+      },
+      typeLabels: {
+        catalog: "Каталожный / расходники",
+        serial: "Серийный по модели",
+        unique: "Уникальный / штучный"
+      },
+      typeExamples: {
+        catalog: "трубы, крепёж, книги, расходники, автохимия",
+        serial: "электроника, одежда, инструменты, запчасти",
+        unique: "квартиры, авто, услуги, мебель, б/у"
+      },
+      // Примечание: manual↔unique, auto↔serial, strongAuto↔catalog (для category-reference)
+      statusMultiplier: { own: 0, partial: 0.5, none: 1 }
+    },
+    // categoryAutomation ПЕРЕМЕЩЁН в config/category-reference.js (справочник для UI, движком не используется)
+    // Placement: прямые клиентские цены (₽), не часы×ставка.
+    // setup = разовая фикс-настройка; setupPerListing = разово за объявление.
+    // Ежемесячная поддержка загрузки удалена (Pass 9): ведение существующих объявлений
+    // покрыто «Ведением и оптимизацией»; добавление новых — отдельная услуга вне калькулятора.
+    placement: {
+      R1: { label: "Готовый фид", setup: 0, setupPerListing: 0 },
+      R2: { label: "Из прайс-таблицы", setup: 6e3, setupPerListing: 0 },
+      // 2026-07-03 +20% (было 5000)
+      R3: { label: "Сложная интеграция", setup: 3e4, setupPerListing: 0 },
+      // +20% (было 25000)
+      R4: { label: "Ручное размещение", setup: 0, setupPerListing: 18 }
+      // +20% (было 15)
+    },
+    work: {
+      // ⚠️ контент/ведение/автоответчик/аналитика/продвижение — черновые заглушки часов, калибровать
+      placement: null,
+      // УСТАРЕЛО — placement теперь в config.placement выше (прямые клиентские цены)
+      management: { monthlyHoursPerAccount: 5, monthlyHoursPerListing: 0.05, role: "avitolog" },
+      autoresponder: {
+        none: {},
+        basic: { monthlyHours: 2, role: "avitolog" },
+        trainable: { setupHours: 4, monthlyHours: 2.5, role: "dev" }
+        // ⚠️ setup снижен 10→4 (конфиг бота под клиента, не тяжёлая разработка) — калибровать
+      },
+      analytics: {
+        basic: { monthlyHours: 0, role: "analyst" },
+        extended: { monthlyHours: 3.75, role: "analyst" },
+        // калибровка: цена клиенту ~12 000 ₽/мес (3.75ч×2000×1.6)
+        crossCrm: { setupHours: 20, monthlyHours: 9.375, role: "dev" }
+        // калибровка: цена ~30 000 ₽/мес (9.375ч×2000×1.6); setup 20ч → 64 000 ₽
+      },
+      promotionMgmt: { monthlyHours: 6, role: "avitolog" }
+    },
+    setupMin: 18e3,
+    // 2026-07-03 +20% (было 15000)
+    minMonthly: 12e3,
+    // +20% (было 10000)
+    market: { monthlyCeiling: 8e4, setupCeiling: 8e4 },
+    // Региональные режимы: как регионы влияют на цену (пояснение для клиента — он может не знать правил Авито).
+    // single: одно объявление на все регионы (регионы на цену не влияют) ·
+    // repeat: одно объявление, размещаем в каждом регионе (×публикации) ·
+    // distinct: свои объявления под каждый регион (×контент и ×публикации).
+    // Разовая интеграция (R2/R3 setup) не зависит от регионов ни в одном режиме.
+    defaultRegionMode: "repeat",
+    regionModes: {
+      single: { label: "Одно объявление на все регионы", note: "Одно объявление показывается сразу в нескольких регионах — число регионов на цену не влияет (доступно не во всех категориях Авито)." },
+      repeat: { label: "Одно объявление, размещаем в каждом регионе", note: "Контент создаётся один раз, но публикуется отдельно в каждом регионе — растёт число размещений." },
+      distinct: { label: "Свои объявления под каждый регион", note: "Под каждый регион — своё объявление с отдельным контентом: нужно в категориях, где Авито не даёт дублировать один и тот же товар. Растёт и объём контента, и число размещений." }
+    },
+    presets: {
+      start: {
+        label: "Старт",
+        sub: "До 20 объявлений · 1 регион · обычный автоответчик · базовая аналитика",
+        inputs: {
+          items: [{ type: "serial", listings: 20, contentStatus: "none" }],
+          accounts: 1,
+          regions: 1,
+          regionMode: "single",
+          placementLevel: "R2",
+          autoresponder: "basic",
+          analytics: "basic",
+          promotionMgmt: false
+        }
+      },
+      business: {
+        label: "Бизнес",
+        sub: "До 60 объявлений · 3 региона · обучаемый автоответчик · расширенная аналитика · продвижение",
+        inputs: {
+          items: [{ type: "serial", listings: 60, contentStatus: "none" }],
+          accounts: 1,
+          regions: 3,
+          regionMode: "repeat",
+          placementLevel: "R2",
+          autoresponder: "trainable",
+          analytics: "extended",
+          promotionMgmt: true
+        }
+      },
+      premium: {
+        label: "Премиум",
+        sub: "До 200 объявлений · 2 аккаунта · 5 регионов · сквозная аналитика + CRM · продвижение",
+        inputs: {
+          items: [{ type: "serial", listings: 200, contentStatus: "none" }],
+          accounts: 2,
+          regions: 5,
+          regionMode: "repeat",
+          placementLevel: "R3",
+          autoresponder: "trainable",
+          analytics: "crossCrm",
+          promotionMgmt: true
+        }
+      }
+    }
+  };
+
   // src/cost.js
   function computeCost(inputs, config2) {
     const w = config2.work;
@@ -650,126 +1027,9 @@
     };
   }
 
-  // config/pricing.config.js
-  var config = {
-    currency: "RUB",
-    rates: {
-      avitolog: 565,
-      // 2026-07-03: +13% (расходы) — было 500
-      analyst: 2260,
-      // +13% — было 2000
-      dev: 2260
-      // +13% — было 2000
-    },
-    targetMargin: 0.7,
-    // 2026-07-03: 0.6→0.7 (маржа подросла); с rates+13% и placement+20% даёт ~+20% цены клиенту
-    marginFloor: 0.5,
-    roundTo: 500,
-    content: {
-      // Себестоимость создания контента ₽/объявление по типу товара
-      byType: {
-        catalog: 28,
-        // Каталожный / расходники (трубы, крепёж, бытхимия) — 2026-07-03 +13% (было 25)
-        serial: 34,
-        // Серийный по модели (электроника, бытовая техника) — +13% (было 30)
-        unique: 56
-        // Уникальный / штучный (квартиры, авто, б/у вещи) — +12% (было 50)
-      },
-      typeLabels: {
-        catalog: "Каталожный / расходники",
-        serial: "Серийный по модели",
-        unique: "Уникальный / штучный"
-      },
-      typeExamples: {
-        catalog: "трубы, крепёж, книги, расходники, автохимия",
-        serial: "электроника, одежда, инструменты, запчасти",
-        unique: "квартиры, авто, услуги, мебель, б/у"
-      },
-      // Примечание: manual↔unique, auto↔serial, strongAuto↔catalog (для category-reference)
-      statusMultiplier: { own: 0, partial: 0.5, none: 1 }
-    },
-    placement: {
-      R1: { label: "Готовый фид", setup: 0, setupPerListing: 0 },
-      R2: { label: "Из прайс-таблицы", setup: 6e3, setupPerListing: 0 },
-      // 2026-07-03 +20% (было 5000)
-      R3: { label: "Сложная интеграция", setup: 3e4, setupPerListing: 0 },
-      // +20% (было 25000)
-      R4: { label: "Ручное размещение", setup: 0, setupPerListing: 18 }
-      // +20% (было 15)
-    },
-    work: {
-      placement: null,
-      management: { monthlyHoursPerAccount: 5, monthlyHoursPerListing: 0.05, role: "avitolog" },
-      autoresponder: {
-        none: {},
-        basic: { monthlyHours: 2, role: "avitolog" },
-        trainable: { setupHours: 4, monthlyHours: 2.5, role: "dev" }
-      },
-      analytics: {
-        basic: { monthlyHours: 0, role: "analyst" },
-        extended: { monthlyHours: 3.75, role: "analyst" },
-        crossCrm: { setupHours: 20, monthlyHours: 9.375, role: "dev" }
-      },
-      promotionMgmt: { monthlyHours: 6, role: "avitolog" }
-    },
-    setupMin: 18e3,
-    minMonthly: 12e3,
-    market: { monthlyCeiling: 8e4, setupCeiling: 8e4 },
-    defaultRegionMode: "repeat",
-    regionModes: {
-      single: { label: "Одно объявление на все регионы", note: "Одно объявление показывается сразу в нескольких регионах — число регионов на цену не влияет (доступно не во всех категориях Авито)." },
-      repeat: { label: "Одно объявление, размещаем в каждом регионе", note: "Контент создаётся один раз, но публикуется отдельно в каждом регионе — растёт число размещений." },
-      distinct: { label: "Свои объявления под каждый регион", note: "Под каждый регион — своё объявление с отдельным контентом: нужно в категориях, где Авито не даёт дублировать один и тот же товар. Растёт и объём контента, и число размещений." }
-    },
-    presets: {
-      start: {
-        label: "Старт",
-        sub: "До 20 объявлений · 1 регион · обычный автоответчик · базовая аналитика",
-        inputs: {
-          items: [{ type: "serial", listings: 20, contentStatus: "none" }],
-          accounts: 1,
-          regions: 1,
-          regionMode: "single",
-          placementLevel: "R2",
-          autoresponder: "basic",
-          analytics: "basic",
-          promotionMgmt: false
-        }
-      },
-      business: {
-        label: "Бизнес",
-        sub: "До 60 объявлений · 3 региона · обучаемый автоответчик · расширенная аналитика · продвижение",
-        inputs: {
-          items: [{ type: "serial", listings: 60, contentStatus: "none" }],
-          accounts: 1,
-          regions: 3,
-          regionMode: "repeat",
-          placementLevel: "R2",
-          autoresponder: "trainable",
-          analytics: "extended",
-          promotionMgmt: true
-        }
-      },
-      premium: {
-        label: "Премиум",
-        sub: "До 200 объявлений · 2 аккаунта · 5 регионов · сквозная аналитика + CRM · продвижение",
-        inputs: {
-          items: [{ type: "serial", listings: 200, contentStatus: "none" }],
-          accounts: 2,
-          regions: 5,
-          regionMode: "repeat",
-          placementLevel: "R3",
-          autoresponder: "trainable",
-          analytics: "crossCrm",
-          promotionMgmt: true
-        }
-      }
-    }
-  };
-
   // web/widget.js
   function formatRub(n) {
-    return new Intl.NumberFormat("ru-RU").format(n).replace(/[    ]/g, " ") + " ₽";
+    return new Intl.NumberFormat("ru-RU").format(n).replace(/[    ]/g, " ") + " ₽";
   }
   function buildRows(view) {
     return view.breakdown.map((b) => {
@@ -794,14 +1054,14 @@
     });
   }
   function applyPreset(form, presetInputs, addItemRowFn) {
-    const el = form.elements;
-    if (el["accounts"]) el["accounts"].value = String(presetInputs.accounts);
-    if (el["regions"]) el["regions"].value = String(presetInputs.regions);
-    if (el["placementLevel"]) el["placementLevel"].value = presetInputs.placementLevel;
-    if (el["regionMode"] && presetInputs.regionMode) el["regionMode"].value = presetInputs.regionMode;
-    if (el["autoresponder"]) el["autoresponder"].value = presetInputs.autoresponder;
-    if (el["analytics"]) el["analytics"].value = presetInputs.analytics;
-    if (el["promotionMgmt"]) el["promotionMgmt"].checked = presetInputs.promotionMgmt;
+    const el2 = form.elements;
+    if (el2["accounts"]) el2["accounts"].value = String(presetInputs.accounts);
+    if (el2["regions"]) el2["regions"].value = String(presetInputs.regions);
+    if (el2["placementLevel"]) el2["placementLevel"].value = presetInputs.placementLevel;
+    if (el2["regionMode"] && presetInputs.regionMode) el2["regionMode"].value = presetInputs.regionMode;
+    if (el2["autoresponder"]) el2["autoresponder"].value = presetInputs.autoresponder;
+    if (el2["analytics"]) el2["analytics"].value = presetInputs.analytics;
+    if (el2["promotionMgmt"]) el2["promotionMgmt"].checked = presetInputs.promotionMgmt;
     const container = form.querySelector("#items-container");
     if (container && addItemRowFn && presetInputs.items) {
       container.innerHTML = "";
@@ -860,7 +1120,7 @@
         recalc();
       }
     });
-    row.querySelectorAll("select, input").forEach((el) => el.addEventListener("input", recalc));
+    row.querySelectorAll("select, input").forEach((el2) => el2.addEventListener("input", recalc));
     container.appendChild(row);
     return row;
   }
@@ -880,23 +1140,28 @@
       });
     });
   }
-  function render(view, out) {
+  function groupRows(view) {
     const rows = buildRows(view);
-    let setupPackageItems = [];
-    let monthlyPackageItems = [];
-    let itemizedRows = [];
+    const setupPackage = [];
+    const monthlyPackage = [];
+    const itemized = [];
     for (const r of rows) {
-      if (r.labelOnly) {
-        const b = view.breakdown.find((b2) => {
-          const suffix = b2.note ? ` — ${b2.note}` : "";
-          return b2.label + suffix === r.label;
-        });
-        if (b && b.setup != null) setupPackageItems.push(r.label);
-        else monthlyPackageItems.push(r.label);
-      } else {
-        itemizedRows.push(r);
+      if (!r.labelOnly) {
+        itemized.push(r);
+        continue;
       }
+      const source = view.breakdown.find((b) => r.label === b.label || r.label.startsWith(`${b.label} — `));
+      if (source && source.setup != null) setupPackage.push(r.label);
+      else monthlyPackage.push(r.label);
     }
+    return { setupPackage, monthlyPackage, itemized };
+  }
+  function render(view, out) {
+    const {
+      setupPackage: setupPackageItems,
+      monthlyPackage: monthlyPackageItems,
+      itemized: itemizedRows
+    } = groupRows(view);
     const setupSublabel = view.setupIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
     const monthlySublabel = view.monthlyIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
     let breakdownHtml = "";
@@ -960,12 +1225,12 @@
     itemsSection.appendChild(container);
     itemsSection.appendChild(addBtn);
     itemsSection.appendChild(itemHint);
-    function setHint(name, text) {
-      const el = form.elements[name];
-      if (!el) return;
-      let hint = el.closest("label") ? el.closest("label").nextElementSibling : null;
+    function setHint(name, text2) {
+      const el2 = form.elements[name];
+      if (!el2) return;
+      let hint = el2.closest("label") ? el2.closest("label").nextElementSibling : null;
       if (hint && hint.classList.contains("param-hint")) {
-        hint.textContent = text;
+        hint.textContent = text2;
       }
     }
     form.insertBefore(itemsSection, form.firstChild);
@@ -984,19 +1249,900 @@
       addItemRowBound(null);
       recalc();
     });
-    if (presetsContainer) {
-      renderPresets(presetsContainer, form, recalc, config, addItemRowBound);
-    }
+    const rerenderPresets = () => {
+      if (presetsContainer) renderPresets(presetsContainer, form, recalc, config, addItemRowBound);
+    };
+    rerenderPresets();
     form.addEventListener("input", recalc);
     recalc();
+    return { recalc, rerenderPresets };
   }
 
-  // web/widget-entry.js
+  // src/reports.js
+  var NUM = new Intl.NumberFormat("ru-RU");
+  function fmtNum(n) {
+    return NUM.format(n).replace(/[    ]/g, " ");
+  }
+  function fmtRub(n) {
+    return fmtNum(Math.round(n)) + " ₽";
+  }
+  function marginPct(price, cost) {
+    return cost === 0 ? 0 : Math.round((price - cost) / cost * 100);
+  }
+  var AUTORESPONDER_LABELS = { none: "Нет", basic: "Обычный", trainable: "Обучаемый" };
+  var ANALYTICS_LABELS = { basic: "Базовая", extended: "Расширенная", crossCrm: "Сквозная + CRM" };
+  var CONTENT_STATUS_LABELS = { own: "контент свой", partial: "контент частично", none: "контент делаем мы" };
+  var REGION_MODE_LABELS = {
+    single: "одно объявление на все регионы",
+    repeat: "одно объявление, публикуем в каждом регионе",
+    distinct: "свои объявления под каждый регион"
+  };
+  function atPath(obj, path) {
+    return path.reduce((o, k) => o == null ? void 0 : o[k], obj);
+  }
+  function costDetail(costLine) {
+    if (costLine.qty > 0) {
+      return `${fmtNum(costLine.qty)} × ${fmtRub(costLine.cost / costLine.qty)}`;
+    }
+    if (costLine.hours !== null && costLine.hours > 0) {
+      return `${fmtNum(costLine.hours)} ч × ${fmtRub(costLine.cost / costLine.hours)}`;
+    }
+    if (typeof costLine.fixedPrice === "number") return "прямая цена из прайса";
+    return null;
+  }
+  function buildParams(inputs, config2) {
+    const params = [];
+    const items = (inputs.items || []).map((it) => {
+      const typeLabel = config2.content.typeLabels && config2.content.typeLabels[it.type] || it.type;
+      return `${typeLabel} — ${fmtNum(it.listings)} шт, ${CONTENT_STATUS_LABELS[it.contentStatus] || it.contentStatus}`;
+    });
+    if (items.length) params.push({ label: "Товар", value: items.join(" · ") });
+    params.push({ label: "Аккаунтов", value: String(inputs.accounts) });
+    const modeLabel = config2.regionModes && config2.regionModes[inputs.regionMode] && config2.regionModes[inputs.regionMode].label || REGION_MODE_LABELS[inputs.regionMode] || inputs.regionMode;
+    params.push({ label: "Регионов", value: `${fmtNum(inputs.regions)} — ${modeLabel}` });
+    const pl = config2.placement[inputs.placementLevel];
+    params.push({ label: "Размещение", value: pl ? `${inputs.placementLevel} — ${pl.label}` : String(inputs.placementLevel) });
+    params.push({ label: "Автоответчик", value: AUTORESPONDER_LABELS[inputs.autoresponder] || inputs.autoresponder });
+    params.push({ label: "Аналитика", value: ANALYTICS_LABELS[inputs.analytics] || inputs.analytics });
+    params.push({ label: "Управление продвижением", value: inputs.promotionMgmt ? "Да" : "Нет" });
+    if (inputs.noMonthly) params.push({ label: "Разовый проект", value: "Да — без ежемесячного ведения" });
+    return params;
+  }
+  function modelParamSpecs() {
+    return [
+      { path: ["targetMargin"], label: "Целевая маржа", kind: "percent", step: 0.05 },
+      { path: ["rates", "avitolog"], label: "Ставка — авитолог", kind: "rate", step: 5 },
+      { path: ["rates", "analyst"], label: "Ставка — аналитик", kind: "rate", step: 10 },
+      { path: ["rates", "dev"], label: "Ставка — разработчик", kind: "rate", step: 10 },
+      { path: ["content", "byType", "catalog"], label: "Контент — каталожный", kind: "perListing", step: 1 },
+      { path: ["content", "byType", "serial"], label: "Контент — серийный", kind: "perListing", step: 1 },
+      { path: ["content", "byType", "unique"], label: "Контент — уникальный", kind: "perListing", step: 1 },
+      { path: ["placement", "R2", "setup"], label: "Размещение R2 — настройка", kind: "money", step: 500 },
+      { path: ["placement", "R3", "setup"], label: "Размещение R3 — настройка", kind: "money", step: 500 },
+      { path: ["placement", "R4", "setupPerListing"], label: "Размещение R4 — за объявление", kind: "perListing", step: 1 },
+      { path: ["work", "management", "monthlyHoursPerAccount"], label: "Ведение — часов на аккаунт/мес", kind: "hours", step: 0.5 },
+      { path: ["work", "management", "monthlyHoursPerListing"], label: "Ведение — часов на объявление/мес", kind: "hours", step: 0.01 },
+      { path: ["work", "autoresponder", "basic", "monthlyHours"], label: "Автоответчик обычный — ч/мес", kind: "hours", step: 0.5 },
+      { path: ["work", "autoresponder", "trainable", "setupHours"], label: "Автоответчик обучаемый — настройка, ч", kind: "hours", step: 0.5 },
+      { path: ["work", "autoresponder", "trainable", "monthlyHours"], label: "Автоответчик обучаемый — ч/мес", kind: "hours", step: 0.5 },
+      { path: ["work", "analytics", "extended", "monthlyHours"], label: "Аналитика расширенная — ч/мес", kind: "hours", step: 0.25 },
+      { path: ["work", "analytics", "crossCrm", "setupHours"], label: "Сквозная аналитика — настройка, ч", kind: "hours", step: 1 },
+      { path: ["work", "analytics", "crossCrm", "monthlyHours"], label: "Сквозная аналитика — ч/мес", kind: "hours", step: 0.25 },
+      { path: ["work", "promotionMgmt", "monthlyHours"], label: "Продвижение — ч/мес", kind: "hours", step: 0.5 },
+      { path: ["setupMin"], label: "Минимум по настройке", kind: "money", step: 500 },
+      { path: ["minMonthly"], label: "Минимум по ведению", kind: "money", step: 500 },
+      { path: ["market", "setupCeiling"], label: "Рыночный потолок — настройка", kind: "money", step: 1e3 },
+      { path: ["market", "monthlyCeiling"], label: "Рыночный потолок — ведение", kind: "money", step: 1e3 }
+    ];
+  }
+  function formatModelValue(raw, kind) {
+    if (raw == null) return "—";
+    switch (kind) {
+      case "percent":
+        return `${Math.round(raw * 100)}%`;
+      case "rate":
+        return `${fmtRub(raw)}/ч`;
+      case "perListing":
+        return `${fmtRub(raw)}/объявл`;
+      case "hours":
+        return `${fmtNum(raw)} ч`;
+      default:
+        return fmtRub(raw);
+    }
+  }
+  function buildModel(config2, baseConfig2) {
+    return modelParamSpecs().map((spec) => {
+      const raw = atPath(config2, spec.path);
+      const baseRaw = baseConfig2 ? atPath(baseConfig2, spec.path) : raw;
+      return {
+        path: spec.path,
+        label: spec.label,
+        kind: spec.kind,
+        step: spec.step,
+        raw,
+        value: formatModelValue(raw, spec.kind),
+        baseRaw,
+        baseValue: formatModelValue(baseRaw, spec.kind),
+        changed: baseConfig2 ? raw !== baseRaw : false
+      };
+    }).filter((m) => m.raw != null);
+  }
+  function buildInternalReport(result, config2, opts = {}) {
+    const rows = result.price.lines.map((priceLine) => {
+      const costLine = result.cost.lines.find((c) => c.key === priceLine.key);
+      return {
+        key: priceLine.key,
+        label: priceLine.label,
+        phase: priceLine.phase,
+        detail: costDetail(costLine),
+        hours: costLine.hours,
+        cost: costLine.cost,
+        price: priceLine.price,
+        marginPct: marginPct(priceLine.price, costLine.cost)
+      };
+    }).filter((r) => !(r.cost === 0 && r.price === 0));
+    const g = result.guardrails;
+    const flags = [];
+    if (g.setupMinApplied) {
+      flags.push(`Настройка поднята до минимума ${fmtRub(config2.setupMin)} — по строкам вышло ${fmtRub(result.price.setup - g.setupMinAdjustment)}.`);
+    }
+    if (g.minMonthlyApplied) {
+      flags.push(`Ведение поднято до минимума ${fmtRub(config2.minMonthly)} — по строкам вышло ${fmtRub(result.price.monthly - g.minMonthlyAdjustment)}.`);
+    }
+    if (g.setupOverCeiling) {
+      flags.push(`Настройка выше рыночного потолка ${fmtRub(config2.market.setupCeiling)} — клиенту показываем сумму с пометкой «предварительный расчёт».`);
+    }
+    if (g.monthlyOverMarket) {
+      flags.push(`Ведение выше рыночного потолка ${fmtRub(config2.market.monthlyCeiling)} — клиенту показываем сумму с пометкой «предварительный расчёт».`);
+    }
+    return {
+      title: "Внутренний расчёт",
+      params: buildParams(result.inputs, config2),
+      rows,
+      setup: {
+        price: result.price.setup,
+        cost: result.cost.setup,
+        marginPct: marginPct(result.price.setup, result.cost.setup),
+        isMinimum: g.setupMinApplied,
+        overCeiling: g.setupOverCeiling
+      },
+      monthly: {
+        price: result.price.monthly,
+        cost: result.cost.monthly,
+        marginPct: marginPct(result.price.monthly, result.cost.monthly),
+        isMinimum: g.minMonthlyApplied,
+        overCeiling: g.monthlyOverMarket
+      },
+      firstPayment: result.price.setup + result.price.monthly,
+      model: buildModel(config2, opts.baseConfig),
+      flags
+    };
+  }
+  function stripQty(detail) {
+    return detail ? detail.replace(/ × \d+$/, "") : null;
+  }
+  function buildQuoteReport(result, config2) {
+    const view = toClientView(result, config2);
+    const setupItems = [];
+    const monthlyItems = [];
+    const setupPackage = [];
+    const monthlyPackage = [];
+    for (const b of view.breakdown) {
+      const isSetup = b.setup != null;
+      const atMinimum = isSetup && view.setupIsMinimum || !isSetup && view.monthlyIsMinimum;
+      if (atMinimum) {
+        const entry2 = { label: b.label, detail: b.note || stripQty(b.detail) };
+        (isSetup ? setupPackage : monthlyPackage).push(entry2);
+        continue;
+      }
+      const amount = isSetup ? b.setup : b.monthly;
+      const entry = {
+        label: b.label,
+        detail: b.detail || null,
+        amount,
+        amountText: b.note ? b.note : isSetup ? `${fmtRub(amount)} разово` : `${fmtRub(amount)}/мес`
+      };
+      (isSetup ? setupItems : monthlyItems).push(entry);
+    }
+    const notes = [];
+    if (view.isPreliminary) notes.push(view.preliminaryNote);
+    notes.push(view.platformNote);
+    return {
+      title: "Расчёт стоимости",
+      setup: view.setup,
+      monthly: view.monthly,
+      firstPayment: view.setup + view.monthly,
+      setupIsMinimum: view.setupIsMinimum,
+      monthlyIsMinimum: view.monthlyIsMinimum,
+      setupItems,
+      monthlyItems,
+      setupPackage,
+      monthlyPackage,
+      isPreliminary: view.isPreliminary,
+      notes
+    };
+  }
+
+  // src/configOverrides.js
+  function pathKey(path) {
+    return path.join(".");
+  }
+  function readAtPath(obj, path) {
+    return path.reduce((o, k) => o == null ? void 0 : o[k], obj);
+  }
+  function writeAtPath(obj, path, value) {
+    const parent = readAtPath(obj, path.slice(0, -1));
+    if (parent == null) return false;
+    parent[path[path.length - 1]] = value;
+    return true;
+  }
+  function applyOverridesInPlace(liveConfig, baseConfig2, overrides = {}) {
+    for (const spec of modelParamSpecs()) {
+      const key = pathKey(spec.path);
+      const baseValue = readAtPath(baseConfig2, spec.path);
+      if (baseValue === void 0) continue;
+      const value = Object.prototype.hasOwnProperty.call(overrides, key) ? overrides[key] : baseValue;
+      writeAtPath(liveConfig, spec.path, value);
+    }
+    return liveConfig;
+  }
+
+  // web/internal-page/png.js
+  var SCALE = 2;
+  var WIDTH = 1080;
+  var PAD = 48;
+  var T = {
+    ink: "#0a1828",
+    muted: "#5a6b80",
+    line: "rgba(10,24,40,.14)",
+    lineSoft: "rgba(10,24,40,.07)",
+    blue: "#0055cc",
+    bg: "#ffffff",
+    bgSoft: "#f0f3f8",
+    warnBg: "#fff6e0",
+    warnInk: "#7a4b00",
+    warnLine: "rgba(180,120,0,.35)",
+    good: "#0a7d3f",
+    bad: "#b3261e",
+    face: 'Manrope, "Segoe UI", Roboto, Arial, sans-serif'
+  };
+  var font = (weight, size) => `${weight} ${size}px ${T.face}`;
+  function wrap(ctx, text2, maxWidth) {
+    const out = [];
+    for (const paragraph of String(text2).split("\n")) {
+      const words = paragraph.split(" ");
+      let line = "";
+      for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (ctx.measureText(candidate).width > maxWidth && line) {
+          out.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+  function text(ctx, str, x, y, opts, draw) {
+    const {
+      weight = 500,
+      size = 17,
+      color = T.ink,
+      width = WIDTH - PAD * 2,
+      lineHeight = 1.4,
+      align = "left"
+    } = opts || {};
+    ctx.font = font(weight, size);
+    const lines = wrap(ctx, str, width);
+    const step = size * lineHeight;
+    if (draw) {
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = "alphabetic";
+      const anchorX = align === "right" ? x + width : align === "center" ? x + width / 2 : x;
+      lines.forEach((line, i) => ctx.fillText(line, anchorX, y + step * (i + 1) - size * 0.28));
+      ctx.textAlign = "left";
+    }
+    return step * lines.length;
+  }
+  function clipText(ctx, str, x, y, { weight = 500, size = 16, color = T.ink, width, align = "left" }, draw) {
+    ctx.font = font(weight, size);
+    let value = String(str);
+    if (ctx.measureText(value).width > width) {
+      while (value.length > 1 && ctx.measureText(value + "…").width > width) value = value.slice(0, -1);
+      value += "…";
+    }
+    if (draw) {
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = "alphabetic";
+      const anchorX = align === "right" ? x + width : align === "center" ? x + width / 2 : x;
+      ctx.fillText(value, anchorX, y + size);
+      ctx.textAlign = "left";
+    }
+    return size * 1.35;
+  }
+  function rule(ctx, x, y, width, draw, color = T.line) {
+    if (draw) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, width, 1);
+    }
+    return 1;
+  }
+  function sectionTitle(ctx, str, x, y, width, draw) {
+    let h = text(ctx, str.toUpperCase(), x, y, { weight: 700, size: 13, color: T.muted, width }, draw);
+    h += 6;
+    h += rule(ctx, x, y + h, width, draw);
+    return h + 14;
+  }
+  function keyValues(ctx, items, x, y, width, draw, cols = 2) {
+    const gap = 28;
+    const colWidth = (width - gap * (cols - 1)) / cols;
+    const rowsCount = Math.ceil(items.length / cols);
+    let maxHeight = 0;
+    const heights = [];
+    for (let i = 0; i < items.length; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cx = x + col * (colWidth + gap);
+      let cy = y;
+      for (let r = 0; r < row; r++) cy += heights[r] || 0;
+      const labelH = text(ctx, items[i].label, cx, cy, { weight: 600, size: 13, color: T.muted, width: colWidth }, draw);
+      const valueH = text(ctx, items[i].value, cx, cy + labelH, { weight: 600, size: 16, color: T.ink, width: colWidth }, draw);
+      const cellH = labelH + valueH + 14;
+      heights[row] = Math.max(heights[row] || 0, cellH);
+    }
+    for (let r = 0; r < rowsCount; r++) maxHeight += heights[r] || 0;
+    return maxHeight;
+  }
+  function table(ctx, { columns, fractions, rows, groups }, x, y, width, draw) {
+    const gap = 14;
+    const usable = width - gap * (columns.length - 1);
+    const widths = fractions.map((f) => usable * f);
+    const xs = [];
+    let cursor = x;
+    for (const w of widths) {
+      xs.push(cursor);
+      cursor += w + gap;
+    }
+    let h = 0;
+    columns.forEach((c, i) => {
+      clipText(ctx, c.title, xs[i], y + h, { weight: 700, size: 12, color: T.muted, width: widths[i], align: c.align || "left" }, draw);
+    });
+    h += 20;
+    h += rule(ctx, x, y + h, width, draw);
+    h += 10;
+    for (const group of groups) {
+      const groupRows2 = rows.filter((r) => r.phase === group.phase);
+      if (!groupRows2.length) continue;
+      h += text(ctx, group.title, x, y + h, { weight: 700, size: 14, color: T.blue, width }, draw);
+      h += 8;
+      for (const row of groupRows2) {
+        let rowH = 0;
+        columns.forEach((c, i) => {
+          const raw = row[c.key];
+          if (raw == null || raw === "") return;
+          const cellH = clipText(ctx, raw, xs[i], y + h, {
+            weight: c.weight || 500,
+            size: c.size || 15,
+            color: typeof c.color === "function" ? c.color(row) : c.color || T.ink,
+            width: widths[i],
+            align: c.align || "left"
+          }, draw);
+          rowH = Math.max(rowH, cellH);
+        });
+        if (row.detail) {
+          rowH += clipText(ctx, row.detail, xs[0], y + h + rowH - 2, { weight: 500, size: 12.5, color: T.muted, width: widths[0] }, draw);
+        }
+        h += rowH + 9;
+        h += rule(ctx, x, y + h - 4, width, draw, T.lineSoft);
+      }
+      h += 10;
+    }
+    return h;
+  }
+  function totalsCard(ctx, cards, x, y, width, draw) {
+    const gap = 16;
+    const cardWidth = (width - gap * (cards.length - 1)) / cards.length;
+    const height = 118;
+    cards.forEach((card, i) => {
+      const cx = x + i * (cardWidth + gap);
+      if (draw) {
+        ctx.fillStyle = card.strong ? T.ink : T.bgSoft;
+        roundRect(ctx, cx, y, cardWidth, height, 14);
+        ctx.fill();
+      }
+      const inkColor = card.strong ? "#ffffff" : T.ink;
+      const mutedColor = card.strong ? "rgba(255,255,255,.7)" : T.muted;
+      text(ctx, card.label, cx + 18, y + 14, { weight: 700, size: 12.5, color: mutedColor, width: cardWidth - 36 }, draw);
+      text(ctx, card.value, cx + 18, y + 38, { weight: 700, size: 28, color: inkColor, width: cardWidth - 36 }, draw);
+      if (card.sub) {
+        text(ctx, card.sub, cx + 18, y + 78, { weight: 600, size: 13, color: mutedColor, width: cardWidth - 36 }, draw);
+      }
+    });
+    return height;
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function warnBox(ctx, lines, x, y, width, draw) {
+    if (!lines.length) return 0;
+    const innerWidth = width - 36;
+    let inner = 0;
+    const measured = lines.map((line) => {
+      const h = text(ctx, "• " + line, x + 18, y + 14 + inner, { weight: 600, size: 14, color: T.warnInk, width: innerWidth }, false);
+      inner += h + 6;
+      return h;
+    });
+    const boxHeight = inner + 22;
+    if (draw) {
+      ctx.fillStyle = T.warnBg;
+      roundRect(ctx, x, y, width, boxHeight, 12);
+      ctx.fill();
+      ctx.strokeStyle = T.warnLine;
+      ctx.lineWidth = 1;
+      roundRect(ctx, x + 0.5, y + 0.5, width - 1, boxHeight - 1, 12);
+      ctx.stroke();
+      let cursor = 0;
+      lines.forEach((line, i) => {
+        text(ctx, "• " + line, x + 18, y + 12 + cursor, { weight: 600, size: 14, color: T.warnInk, width: innerWidth }, true);
+        cursor += measured[i] + 6;
+      });
+    }
+    return boxHeight;
+  }
+  function header(ctx, { title, subtitle, stamp }, x, y, width, draw) {
+    let h = 0;
+    if (draw) {
+      ctx.fillStyle = T.blue;
+      roundRect(ctx, x, y + 4, 8, 34, 4);
+      ctx.fill();
+    }
+    h += text(ctx, title, x + 22, y, { weight: 800, size: 30, color: T.ink, width: width - 22 }, draw);
+    h += 4;
+    h += text(ctx, subtitle, x + 22, y + h, { weight: 600, size: 15, color: T.muted, width: width - 22 }, draw);
+    h += 10;
+    h += text(ctx, stamp, x, y + h, { weight: 500, size: 13, color: T.muted, width }, draw);
+    return h + 18;
+  }
+  function stampNow(date = /* @__PURE__ */ new Date()) {
+    const two = (n) => String(n).padStart(2, "0");
+    const offsetMinutes = -date.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? "+" : "−";
+    const offsetHours = Math.abs(offsetMinutes) / 60;
+    const offset = `UTC${sign}${Number.isInteger(offsetHours) ? offsetHours : offsetHours.toFixed(1)}`;
+    return `${two(date.getDate())}.${two(date.getMonth() + 1)}.${date.getFullYear()}, ${two(date.getHours())}:${two(date.getMinutes())} (${offset})`;
+  }
+  function paint(blocks) {
+    const measureCanvas = document.createElement("canvas");
+    const measureCtx = measureCanvas.getContext("2d");
+    let total = PAD;
+    for (const block of blocks) total += block(measureCtx, PAD, total, WIDTH - PAD * 2, false);
+    total += PAD;
+    const canvas = document.createElement("canvas");
+    canvas.width = WIDTH * SCALE;
+    canvas.height = Math.ceil(total) * SCALE;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(SCALE, SCALE);
+    ctx.fillStyle = T.bg;
+    ctx.fillRect(0, 0, WIDTH, total);
+    let y = PAD;
+    for (const block of blocks) y += block(ctx, PAD, y, WIDTH - PAD * 2, true);
+    return canvas;
+  }
+  var spacer = (px) => () => px;
+  function renderInternalPng(report, { stamp = stampNow() } = {}) {
+    const marginColor = (row) => row.marginPct < 50 ? T.bad : T.ink;
+    const rows = report.rows.map((r) => ({
+      phase: r.phase,
+      label: r.label,
+      detail: r.detail,
+      cost: fmtRub(r.cost),
+      price: fmtRub(r.price),
+      margin: `${fmtNum(r.marginPct)}%`,
+      marginPct: r.marginPct
+    }));
+    const changedModel = report.model.filter((m) => m.changed);
+    const blocks = [
+      (ctx, x, y, w, draw) => header(ctx, {
+        title: "Aveasy — внутренний расчёт",
+        subtitle: "Себестоимость, цена клиенту и маржа по каждой строке",
+        stamp
+      }, x, y, w, draw),
+      (ctx, x, y, w, draw) => sectionTitle(ctx, "Параметры расчёта", x, y, w, draw),
+      (ctx, x, y, w, draw) => keyValues(ctx, report.params, x, y, w, draw, 2),
+      spacer(10),
+      (ctx, x, y, w, draw) => totalsCard(ctx, [
+        {
+          label: "Настройка, разово",
+          value: fmtRub(report.setup.price),
+          sub: `себестоимость ${fmtRub(report.setup.cost)} · маржа ${fmtNum(report.setup.marginPct)}%${report.setup.isMinimum ? " · минимум" : ""}`
+        },
+        {
+          label: "Ведение, в месяц",
+          value: `${fmtRub(report.monthly.price)}`,
+          sub: `себестоимость ${fmtRub(report.monthly.cost)} · маржа ${fmtNum(report.monthly.marginPct)}%${report.monthly.isMinimum ? " · минимум" : ""}`
+        },
+        {
+          label: "Первый платёж",
+          value: fmtRub(report.firstPayment),
+          sub: "настройка + первый месяц",
+          strong: true
+        }
+      ], x, y, w, draw),
+      spacer(22),
+      (ctx, x, y, w, draw) => report.flags.length ? warnBox(ctx, report.flags, x, y, w, draw) + 20 : 0,
+      (ctx, x, y, w, draw) => sectionTitle(ctx, "Из чего складывается", x, y, w, draw),
+      (ctx, x, y, w, draw) => table(ctx, {
+        columns: [
+          { title: "Работа", key: "label", weight: 600 },
+          { title: "Себестоимость", key: "cost", align: "right" },
+          { title: "Цена клиенту", key: "price", align: "right", weight: 700 },
+          { title: "Маржа", key: "margin", align: "right", weight: 700, color: marginColor }
+        ],
+        fractions: [0.49, 0.17, 0.19, 0.15],
+        rows,
+        groups: [
+          { phase: "setup", title: "Разовая настройка" },
+          { phase: "monthly", title: "Ежемесячное ведение" }
+        ]
+      }, x, y, w, draw),
+      spacer(6),
+      (ctx, x, y, w, draw) => sectionTitle(ctx, "Параметры модели", x, y, w, draw),
+      (ctx, x, y, w, draw) => keyValues(ctx, report.model.map((m) => ({
+        label: m.label + (m.changed ? " (изменено)" : ""),
+        value: m.changed ? `${m.value}  ←  было ${m.baseValue}` : m.value
+      })), x, y, w, draw, 3),
+      (ctx, x, y, w, draw) => changedModel.length ? warnBox(ctx, ["Расчёт сделан по ИЗМЕНЁННЫМ вручную параметрам — это прикидка «что если», а не действующий прайс."], x, y + 8, w, draw) + 8 : 0,
+      spacer(12),
+      (ctx, x, y, w, draw) => rule(ctx, x, y, w, draw),
+      (ctx, x, y, w, draw) => text(
+        ctx,
+        "Внутренний документ Aveasy. Клиенту не отправлять — для клиента есть отдельная выгрузка.",
+        x,
+        y + 10,
+        { weight: 600, size: 12.5, color: T.muted, width: w },
+        draw
+      ) + 10
+    ];
+    return paint(blocks);
+  }
+  function renderQuotePng(quote, { stamp = stampNow(), site = "aveasy.ru" } = {}) {
+    const listBlock = (title, items, packageItems, isMinimum) => (ctx, x, y, w, draw) => {
+      if (!items.length && !packageItems.length) return 0;
+      let h = sectionTitle(ctx, title, x, y, w, draw);
+      if (isMinimum && packageItems.length) {
+        h += text(ctx, "Базовый пакет — входит:", x, y + h, { weight: 700, size: 15, color: T.ink, width: w }, draw);
+        h += 8;
+        for (const item of packageItems) {
+          const line = item.detail ? `✓ ${item.label} — ${item.detail}` : `✓ ${item.label}`;
+          h += text(ctx, line, x, y + h, { weight: 500, size: 15, color: T.ink, width: w }, draw) + 4;
+        }
+        return h + 12;
+      }
+      for (const item of items) {
+        const rowY = y + h;
+        const valueWidth = 220;
+        const labelWidth = w - valueWidth - 20;
+        const labelH = text(ctx, item.label, x, rowY, { weight: 600, size: 16, color: T.ink, width: labelWidth }, draw);
+        let detailH = 0;
+        if (item.detail && item.detail !== item.amountText) {
+          detailH = text(ctx, item.detail, x, rowY + labelH, { weight: 500, size: 13, color: T.muted, width: labelWidth }, draw);
+        }
+        text(ctx, item.amountText, x + w - valueWidth, rowY, { weight: 700, size: 16, color: T.ink, width: valueWidth, align: "right" }, draw);
+        h += Math.max(labelH + detailH, 22) + 10;
+        h += rule(ctx, x, y + h - 5, w, draw, T.lineSoft);
+      }
+      return h + 12;
+    };
+    const blocks = [
+      (ctx, x, y, w, draw) => header(ctx, {
+        title: "Расчёт стоимости — Авито под ключ",
+        subtitle: "Aveasy — агентство по ведению Авито",
+        stamp
+      }, x, y, w, draw),
+      (ctx, x, y, w, draw) => totalsCard(ctx, [
+        { label: "Первый платёж", value: fmtRub(quote.firstPayment), sub: "настройка + первый месяц", strong: true },
+        { label: "Далее, в месяц", value: fmtRub(quote.monthly), sub: "ведение при том же объёме" }
+      ], x, y, w, draw),
+      spacer(24),
+      listBlock("Разовая настройка", quote.setupItems, quote.setupPackage, quote.setupIsMinimum),
+      listBlock("Ежемесячное ведение", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum),
+      (ctx, x, y, w, draw) => quote.isPreliminary ? warnBox(ctx, quote.notes.filter((n) => /предварительн/i.test(n)), x, y, w, draw) + 16 : 0,
+      (ctx, x, y, w, draw) => {
+        let h = 0;
+        for (const note of quote.notes.filter((n) => !/предварительн/i.test(n))) {
+          h += text(ctx, note, x, y + h, { weight: 500, size: 13.5, color: T.muted, width: w }, draw) + 8;
+        }
+        return h;
+      },
+      spacer(10),
+      (ctx, x, y, w, draw) => rule(ctx, x, y, w, draw),
+      (ctx, x, y, w, draw) => text(
+        ctx,
+        `Первый шаг — бесплатный анализ ниши и стратегия. ${site}`,
+        x,
+        y + 10,
+        { weight: 600, size: 14, color: T.ink, width: w },
+        draw
+      ) + 10
+    ];
+    return paint(blocks);
+  }
+  function canvasToBlob(canvas) {
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  }
+  async function downloadCanvas(canvas, filename) {
+    const blob = await canvasToBlob(canvas);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+  }
+  async function copyCanvas(canvas) {
+    if (!navigator.clipboard || typeof ClipboardItem === "undefined") return false;
+    try {
+      const blob = await canvasToBlob(canvas);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function fileName(prefix, date = /* @__PURE__ */ new Date()) {
+    const two = (n) => String(n).padStart(2, "0");
+    return `${prefix}-${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}.png`;
+  }
+
+  // web/internal-page/panel.js
+  var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function el(tag, className, html) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (html != null) node.innerHTML = html;
+    return node;
+  }
+  function toField(spec) {
+    return spec.kind === "percent" ? Math.round(spec.raw * 1e3) / 10 : spec.raw;
+  }
+  function fromField(spec, value) {
+    return spec.kind === "percent" ? value / 100 : value;
+  }
+  function fieldStep(spec) {
+    return spec.kind === "percent" ? 1 : spec.step;
+  }
+  function fieldSuffix(spec) {
+    return { percent: "%", rate: "₽/ч", perListing: "₽/объявл", hours: "ч", money: "₽" }[spec.kind] || "";
+  }
+  function renderRows(report) {
+    const group = (phase, title) => {
+      const rows = report.rows.filter((r) => r.phase === phase);
+      if (!rows.length) return "";
+      return `<tr class="avz-int-group"><td colspan="5">${title}</td></tr>` + rows.map((r) => `
+      <tr>
+        <td>
+          <span class="avz-int-label">${esc(r.label)}</span>
+          ${r.detail ? `<span class="avz-int-detail">${esc(r.detail)}</span>` : ""}
+        </td>
+        <td class="avz-int-num">${esc(fmtRub(r.cost))}</td>
+        <td class="avz-int-num avz-int-price">${esc(fmtRub(r.price))}</td>
+        <td class="avz-int-num ${r.marginPct < 50 ? "avz-int-low" : ""}">${esc(fmtNum(r.marginPct))}%</td>
+      </tr>`).join("");
+    };
+    return `
+    <table class="avz-int-table">
+      <thead>
+        <tr><th>Работа</th><th class="avz-int-num">Себестоимость</th><th class="avz-int-num">Цена клиенту</th><th class="avz-int-num">Маржа</th></tr>
+      </thead>
+      <tbody>
+        ${group("setup", "Разовая настройка")}
+        ${group("monthly", "Ежемесячное ведение")}
+      </tbody>
+    </table>`;
+  }
+  function renderTotals(report) {
+    const card = (label, value, sub, strong) => `
+    <div class="avz-int-card${strong ? " avz-int-card-strong" : ""}">
+      <div class="avz-int-card-label">${esc(label)}</div>
+      <div class="avz-int-card-value">${esc(value)}</div>
+      <div class="avz-int-card-sub">${esc(sub)}</div>
+    </div>`;
+    return `
+    <div class="avz-int-cards">
+      ${card(
+      "Настройка, разово",
+      fmtRub(report.setup.price),
+      `себестоимость ${fmtRub(report.setup.cost)} · маржа ${fmtNum(report.setup.marginPct)}%${report.setup.isMinimum ? " · минимум" : ""}`
+    )}
+      ${card(
+      "Ведение, в месяц",
+      fmtRub(report.monthly.price),
+      `себестоимость ${fmtRub(report.monthly.cost)} · маржа ${fmtNum(report.monthly.marginPct)}%${report.monthly.isMinimum ? " · минимум" : ""}`
+    )}
+      ${card("Первый платёж", fmtRub(report.firstPayment), "настройка + первый месяц", true)}
+    </div>`;
+  }
+  function renderFlags(report) {
+    if (!report.flags.length) return "";
+    return `<div class="avz-int-warn">${report.flags.map((f) => `<div>• ${esc(f)}</div>`).join("")}</div>`;
+  }
+  function renderParams(report) {
+    return `<div class="avz-int-params">${report.params.map((p) => `
+    <div class="avz-int-param"><span>${esc(p.label)}</span><b>${esc(p.value)}</b></div>`).join("")}</div>`;
+  }
+  function mountInternalPanel({ form, host, config: config2, baseConfig: baseConfig2, widget, watch }) {
+    const overrides = {};
+    const root = el("section", "avz-int");
+    root.innerHTML = `
+    <div class="avz-int-wrap">
+      <div class="avz-int-head">
+        <div>
+          <div class="avz-int-eyebrow">внутренний расчёт</div>
+          <h2 class="avz-int-title">Из чего складывается цена</h2>
+        </div>
+        <div class="avz-int-actions">
+          <button type="button" class="avz-int-btn avz-int-btn-main" data-act="png-internal">Скачать внутренний расчёт</button>
+          <button type="button" class="avz-int-btn" data-act="copy-internal">Копировать картинку</button>
+          <button type="button" class="avz-int-btn avz-int-btn-client" data-act="png-quote">Выгрузить для клиента</button>
+          <button type="button" class="avz-int-btn" data-act="copy-quote">Копировать КП</button>
+          <button type="button" class="avz-int-btn" data-act="print">Печать / PDF</button>
+        </div>
+      </div>
+      <div class="avz-int-status" data-role="status" hidden></div>
+
+      <div class="avz-int-block" data-role="totals"></div>
+      <div class="avz-int-block" data-role="flags"></div>
+
+      <div class="avz-int-sec">Параметры расчёта</div>
+      <div class="avz-int-block" data-role="params"></div>
+
+      <div class="avz-int-sec">Разбор по строкам</div>
+      <div class="avz-int-block avz-int-scroll" data-role="rows"></div>
+
+      <div class="avz-int-sec avz-int-sec-model">
+        Параметры модели
+        <button type="button" class="avz-int-reset" data-act="reset" hidden>Вернуть значения из прайса</button>
+      </div>
+      <p class="avz-int-note">Значения можно менять прямо здесь — расчёт и карточки пакетов пересчитаются.
+        Правки живут только в этой вкладке: файл прайса не меняется, обновление страницы всё вернёт.</p>
+      <div class="avz-int-model" data-role="model"></div>
+    </div>`;
+    host.appendChild(root);
+    const totalsBox = root.querySelector('[data-role="totals"]');
+    const flagsBox = root.querySelector('[data-role="flags"]');
+    const paramsBox = root.querySelector('[data-role="params"]');
+    const rowsBox = root.querySelector('[data-role="rows"]');
+    const modelBox = root.querySelector('[data-role="model"]');
+    const statusBox = root.querySelector('[data-role="status"]');
+    const resetBtn = root.querySelector('[data-act="reset"]');
+    let lastReport = null;
+    let lastQuote = null;
+    function status(message, kind = "ok") {
+      statusBox.textContent = message;
+      statusBox.className = `avz-int-status avz-int-status-${kind}`;
+      statusBox.hidden = false;
+      clearTimeout(status.timer);
+      status.timer = setTimeout(() => {
+        statusBox.hidden = true;
+      }, 4e3);
+    }
+    function currentResult() {
+      return calculate(readInputs(form), config2);
+    }
+    function renderModel(report) {
+      modelBox.innerHTML = report.model.map((m) => {
+        const key = pathKey(m.path);
+        return `
+      <label class="avz-int-field${m.changed ? " avz-int-field-changed" : ""}">
+        <span class="avz-int-field-label">${esc(m.label)}</span>
+        <span class="avz-int-field-input">
+          <input type="number" step="${fieldStep(m)}" value="${toField(m)}" data-path="${esc(key)}" data-kind="${m.kind}">
+          <i>${esc(fieldSuffix(m))}</i>
+        </span>
+        ${m.changed ? `<span class="avz-int-field-base">было ${esc(m.baseValue)}</span>` : ""}
+      </label>`;
+      }).join("");
+      resetBtn.hidden = !report.model.some((m) => m.changed);
+    }
+    function refresh() {
+      const result = currentResult();
+      lastReport = buildInternalReport(result, config2, { baseConfig: baseConfig2 });
+      lastQuote = buildQuoteReport(result, config2);
+      totalsBox.innerHTML = renderTotals(lastReport);
+      flagsBox.innerHTML = renderFlags(lastReport);
+      paramsBox.innerHTML = renderParams(lastReport);
+      rowsBox.innerHTML = renderRows(lastReport);
+      renderModel(lastReport);
+    }
+    function applyOverrides() {
+      applyOverridesInPlace(config2, baseConfig2, overrides);
+      widget.recalc();
+      widget.rerenderPresets();
+      refresh();
+    }
+    modelBox.addEventListener("change", (e) => {
+      const input = e.target.closest("input[data-path]");
+      if (!input) return;
+      const key = input.getAttribute("data-path");
+      const spec = lastReport.model.find((m) => pathKey(m.path) === key);
+      if (!spec) return;
+      const raw = input.value.trim();
+      if (raw === "" || Number.isNaN(Number(raw))) {
+        delete overrides[key];
+      } else {
+        const value = fromField(spec, Number(raw));
+        if (value === spec.baseRaw) delete overrides[key];
+        else overrides[key] = value;
+      }
+      applyOverrides();
+    });
+    resetBtn.addEventListener("click", () => {
+      for (const key of Object.keys(overrides)) delete overrides[key];
+      applyOverrides();
+      status("Значения вернулись к прайсу");
+    });
+    root.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      const act = btn.getAttribute("data-act");
+      if (act === "reset") return;
+      if (act === "print") {
+        window.print();
+        return;
+      }
+      const isInternal = act.endsWith("internal");
+      const canvas = isInternal ? renderInternalPng(lastReport) : renderQuotePng(lastQuote);
+      if (act.startsWith("copy")) {
+        const ok = await copyCanvas(canvas);
+        status(
+          ok ? "Картинка в буфере — вставьте в чат (Ctrl+V)" : "Буфер недоступен в этом браузере — сохраните файлом",
+          ok ? "ok" : "warn"
+        );
+        return;
+      }
+      await downloadCanvas(canvas, fileName(isInternal ? "aveasy-vnutrenniy-raschet" : "aveasy-kp"));
+      status(isInternal ? "Внутренний расчёт сохранён картинкой" : "Предложение для клиента сохранено картинкой");
+    });
+    if (watch && "MutationObserver" in window) {
+      new MutationObserver(() => refresh()).observe(watch, { childList: true, subtree: true });
+    }
+    form.addEventListener("input", refresh);
+    refresh();
+    const api = {
+      refresh,
+      report: () => lastReport,
+      quote: () => lastQuote,
+      internalPng: () => renderInternalPng(lastReport),
+      quotePng: () => renderQuotePng(lastQuote)
+    };
+    window.AVZ_INT = api;
+    return api;
+  }
+
+  // web/internal-page/entry.js
+  var baseConfig = JSON.parse(JSON.stringify(config));
   function init() {
     const form = document.getElementById("ave-form");
     const out = document.getElementById("ave-out");
     const presets = document.getElementById("ave-presets");
-    if (form && out) mount(form, out, presets);
+    if (!form || !out) return;
+    const widget = mount(form, out, presets);
+    const advanced = document.querySelector(".avz-calc-adv");
+    if (advanced) advanced.setAttribute("open", "");
+    const host = document.getElementById("avz-internal-host") || document.body;
+    mountInternalPanel({ form, host, config, baseConfig, widget, watch: out });
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
@@ -1004,133 +2150,7 @@
     init();
   }
 })();
+
 </script>
-
-<script>
-// ===== Мост на шину AVZ: результат расчёта → window.AVZ.calc + событие avz:calc =====
-// Совместимо с AVZ.captureCalc из 00-foundation (dispatchEvent('avz:calc')). Слушает форма #lead (08-lead).
-// Поскольку движок выше пересчитывает #ave-out синхронно (input/клик по пресету/CTA), а не через
-// собственное событие, снимаем итог MutationObserver'ом за #ave-out — это ловит вообще любой пересчёт,
-// включая самый первый (при монтировании) и смену пресета.
-(function () {
-  "use strict";
-  var sec = document.getElementById('calc');
-  var out = document.getElementById('ave-out');
-  if (!sec || !out) return;
-
-  function readTotals() {
-    var b = out.querySelectorAll('.totals .total b');
-    if (b.length < 2) return null;
-    return { setupText: b[0].textContent.trim(), monthlyText: b[1].textContent.trim() };
-  }
-
-  var touched = false; // пользователь трогал калькулятор (input/пресет/CTA) — как calcTouched в прототипе
-  var formEl = document.getElementById('ave-form');
-  if (formEl) {
-    ['input', 'change'].forEach(function (t) {
-      formEl.addEventListener(t, function () { touched = true; }, true);
-    });
-    // Enter в числовом поле не должен сабмитить/перезагружать страницу (бандл движка не блокирует сам)
-    formEl.addEventListener('submit', function (e) { e.preventDefault(); });
-  }
-  sec.addEventListener('click', function (e) {
-    if (e.target && e.target.closest && (e.target.closest('.ave-preset-btn') || e.target.closest('#ave-cta'))) touched = true;
-  }, true);
-
-  // Полный снапшот в формате captureCalc() прототипа (site/assets/site.js:114) — тот же контракт
-  // calc_full разбирает бэкенд lead.py/alert.py («Что настроил клиент» в Telegram), а totals[]
-  // использует 08-lead для короткого эха в форме.
-  function fullSnapshot() {
-    var form = document.getElementById('ave-form');
-    function optText(el) { return (el && el.selectedOptions && el.selectedOptions[0]) ? el.selectedOptions[0].textContent.trim() : (el ? el.value : ''); }
-    function sel(name) { return form ? optText(form.elements[name]) : ''; }
-    function v(name) { var el = form && form.elements[name]; return el ? el.value : ''; }
-    function chk(name) { var el = form && form.elements[name]; return el ? !!el.checked : false; }
-    var items = [];
-    if (form) [].forEach.call(form.querySelectorAll('.item-row'), function (row) {
-      items.push({
-        type: optText(row.querySelector('[name="itemType"]')),
-        listings: Number((row.querySelector('[name="itemListings"]') || {}).value) || 0,
-        content: optText(row.querySelector('[name="itemContentStatus"]'))
-      });
-    });
-    var totals = [];
-    [].forEach.call(out.querySelectorAll('.totals .total'), function (t) {
-      var s = t.querySelector('span'), b = t.querySelector('b');
-      totals.push(((s ? s.textContent.trim() : '') + ' ' + (b ? b.textContent.trim() : '')).trim());
-    });
-    var breakdown = [];
-    [].forEach.call(out.querySelectorAll('.ave-pkg-item'), function (r) { breakdown.push(r.textContent.trim()); });
-    [].forEach.call(out.querySelectorAll('.breakdown .row'), function (r) {
-      var s = r.querySelector('span'), b = r.querySelector('b');
-      if (s && b) breakdown.push(s.textContent.trim() + ' — ' + b.textContent.trim());
-    });
-    return {
-      touched: touched,
-      settings: {
-        accounts: v('accounts'), regions: v('regions'),
-        regionMode: sel('regionMode'), placement: sel('placementLevel'),
-        autoresponder: sel('autoresponder'), analytics: sel('analytics'),
-        promotion: chk('promotionMgmt'), oneOff: chk('noMonthly'),
-        items: items
-      },
-      totals: totals,
-      breakdown: breakdown.slice(0, 30)
-    };
-  }
-
-  function emit(extra) {
-    var t = readTotals();
-    if (!t) return;
-    var data = fullSnapshot();
-    data.setup = t.setupText;     // краткие поля — совместимость с ранними потребителями снапшота
-    data.monthly = t.monthlyText;
-    data.source = 'calc';
-    if (extra) { for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) data[k] = extra[k]; }
-    window.AVZ = window.AVZ || {};
-    window.AVZ.calc = data; // снимок для блоков, монтирующихся позже (08-lead читает на submit)
-    if (typeof window.AVZ.captureCalc === 'function') {
-      window.AVZ.captureCalc(data); // шлёт CustomEvent('avz:calc', {detail: data})
-    } else {
-      document.dispatchEvent(new CustomEvent('avz:calc', { detail: data }));
-    }
-  }
-
-  if ('MutationObserver' in window) {
-    new MutationObserver(function () { emit(); }).observe(out, { childList: true, subtree: true });
-  } else {
-    // старый браузер без MutationObserver — считаем хотя бы по input/клику
-    document.getElementById('ave-form') && document.getElementById('ave-form').addEventListener('input', function () { setTimeout(emit, 0); });
-  }
-
-  // CTA «Получить точный расчёт» пересоздаётся движком при каждом рендере — делегируем клик на секцию,
-  // помечаем снимок как cta:true и мягко доскроллим к форме заявки (эхо в неё кладёт уже 08-lead).
-  sec.addEventListener('click', function (e) {
-    var cta = e.target && e.target.closest ? e.target.closest('#ave-cta') : null;
-    if (!cta) return;
-    emit({ cta: true });
-    var dest = document.getElementById('lead');
-    if (dest && dest.scrollIntoView) dest.scrollIntoView({ behavior: (window.AVZ && window.AVZ.reducedMotion) ? 'auto' : 'smooth' });
-  });
-
-  if (window.AVZ && typeof window.AVZ.reveal === 'function') {
-    window.AVZ.reveal(sec.querySelectorAll('.avz-reveal'));
-  } else if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // фундамента (00) на странице ещё нет — раскрываем сами через IntersectionObserver
-    var els = [].slice.call(sec.querySelectorAll('.avz-reveal'));
-    if ('IntersectionObserver' in window && els.length) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('avz-in'); io.unobserve(en.target); } });
-      }, { threshold: 0.2 });
-      els.forEach(function (el) { io.observe(el); });
-    } else {
-      els.forEach(function (el) { el.classList.add('avz-in'); });
-    }
-  } else {
-    sec.querySelectorAll('.avz-reveal').forEach(function (el) { el.classList.add('avz-in'); });
-  }
-})();
-</script>
-
 </body>
 </html>
