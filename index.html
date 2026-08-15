@@ -180,6 +180,23 @@ body {
   color: var(--muted);
 }
 
+/* Пояснение под полем: чем именно отличаются варианты и что это меняет в работе.
+   Менеджер зачитывает это клиенту, поэтому текст живёт в прайсе рядом с ценами. */
+.avz-hint {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.avz-hint-warn {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-top: 0;
+}
+
 .avz-toggle {
   grid-column: 1 / -1;
   display: flex;
@@ -354,6 +371,12 @@ body {
   font-size: 12px;
 }
 .avz-inc-list b { white-space: nowrap; }
+.avz-inc-list i {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--muted);
+}
 .avz-inc-points li::before { content: '•'; color: var(--blue); }
 
 /* --- Нижняя секция: выгрузки и разбор --- */
@@ -541,13 +564,10 @@ body {
       <label class="avz-field">Регионов
         <input type="number" name="regions" value="1" min="1" step="1">
       </label>
-      <label class="avz-field avz-field-wide">Как размещаем по регионам
-        <select name="regionMode">
-          <option value="single">Одно объявление на все регионы</option>
-          <option value="repeat" selected>Одно объявление, публикуем в каждом регионе</option>
-          <option value="distinct">Свои объявления под каждый регион</option>
-        </select>
+      <label class="avz-field avz-field-wide">Как работаем с городами
+        <select name="regionMode" id="avz-regionmode"></select>
       </label>
+      <small class="avz-hint" id="avz-regionmode-hint"></small>
     </div>
 
     <div class="avz-field-group">
@@ -701,16 +721,29 @@ body {
     minMonthly: 12e3,
     // +20% (было 10000)
     market: { monthlyCeiling: 8e4, setupCeiling: 8e4 },
-    // Региональные режимы: как регионы влияют на цену (пояснение для клиента — он может не знать правил Авито).
-    // single: одно объявление на все регионы (регионы на цену не влияют) ·
-    // repeat: одно объявление, размещаем в каждом регионе (×публикации) ·
-    // distinct: свои объявления под каждый регион (×контент и ×публикации).
+    // Как работаем с несколькими городами. Ноябрь 2025: Авито считает дублями повторные
+    // объявления об одном товаре, В ТОМ ЧИСЛЕ в разных городах, и режет лимит всего профиля
+    // (базовый → жёлтый → красный). Поэтому дефолт — single.
+    //
+    // Режим «своё объявление под каждый регион» (distinct) из выбора УБРАН 2026-08-15: в товарных
+    // категориях это дубли, а ассортимент и вариации в модели и так считаются количеством
+    // объявлений — множить их ещё и на города значило бы считать одно и то же дважды.
+    // Арифметика distinct в src/cost.js сохранена (её проверяют тесты), но клиенту не предлагается.
+    //
     // Разовая интеграция (R2/R3 setup) не зависит от регионов ни в одном режиме.
-    defaultRegionMode: "repeat",
+    defaultRegionMode: "single",
     regionModes: {
-      single: { label: "Одно объявление на все регионы", note: "Одно объявление показывается сразу в нескольких регионах — число регионов на цену не влияет (доступно не во всех категориях Авито)." },
-      repeat: { label: "Одно объявление, размещаем в каждом регионе", note: "Контент создаётся один раз, но публикуется отдельно в каждом регионе — растёт число размещений." },
-      distinct: { label: "Свои объявления под каждый регион", note: "Под каждый регион — своё объявление с отдельным контентом: нужно в категориях, где Авито не даёт дублировать один и тот же товар. Растёт и объём контента, и число размещений." }
+      single: {
+        label: "Одно объявление на все города",
+        note: "Одно объявление показывается сразу в нескольких городах. Охват регулируется настройкой регионов показа и ставкой, а не количеством карточек — поэтому число городов на цену не влияет.",
+        forClient: "Работаем одним комплектом объявлений на все города: охват добираем настройками показа, а не лишними карточками."
+      },
+      repeat: {
+        label: "Отдельные объявления в каждом городе",
+        note: "Контент делаем один раз, но публикуем отдельно в каждом городе — растёт число размещений, а с ним ведение. В Услугах и Работе доступно свободно; в товарных категориях — только в отдельных категориях и при подключённом платном тарифе, иначе это дубли и Авито понизит лимит профиля.",
+        forClient: "Публикуем объявления отдельно в каждом городе — работы больше пропорционально числу городов.",
+        requiresTariff: true
+      }
     },
     // Тарифы, которые клиент видит на aveasy.ru (сняты с живого блока 15.08.2026).
     // anchor — публичная цена сайта: с ней сверяется расчёт (src/tariffFit.js).
@@ -832,7 +865,17 @@ body {
     }
     const mgmtH = w.management.monthlyHoursPerAccount * inputs.accounts + w.management.monthlyHoursPerListing * totalPublications;
     const mgmtCost = mgmtH * rates[w.management.role];
-    lines.push({ key: "management", label: "Ведение и оптимизация", phase: "monthly", role: w.management.role, hours: mgmtH, cost: mgmtCost, qty: null, unit: null });
+    lines.push({
+      key: "management",
+      label: "Ведение и оптимизация",
+      phase: "monthly",
+      role: w.management.role,
+      hours: mgmtH,
+      cost: mgmtCost,
+      qty: null,
+      unit: null,
+      scope: { listings: totalListings, publications: totalPublications, regions, accounts: inputs.accounts }
+    });
     const ar = inputs.autoresponder;
     if (ar === "basic") {
       const h = w.autoresponder.basic.monthlyHours;
@@ -951,7 +994,29 @@ body {
   function costLineOf(result, key) {
     return result.cost.lines.find((x) => x.key === key) || null;
   }
+  function plural(n, forms) {
+    const mod100 = n % 100;
+    const mod10 = n % 10;
+    if (mod100 >= 11 && mod100 <= 14) return forms[2];
+    if (mod10 === 1) return forms[0];
+    if (mod10 >= 2 && mod10 <= 4) return forms[1];
+    return forms[2];
+  }
+  function managementDetail(scope) {
+    if (!scope) return "ежемесячно";
+    const parts = [];
+    if (scope.publications !== scope.listings) {
+      parts.push(`${scope.publications} ${plural(scope.publications, ["размещение", "размещения", "размещений"])} — ${scope.listings} ${plural(scope.listings, ["объявление", "объявления", "объявлений"])} в ${scope.regions} ${plural(scope.regions, ["городе", "городах", "городах"])}`);
+    } else {
+      parts.push(`${scope.listings} ${plural(scope.listings, ["объявление", "объявления", "объявлений"])}`);
+    }
+    if (scope.accounts > 1) {
+      parts.push(`${scope.accounts} ${plural(scope.accounts, ["профиль", "профиля", "профилей"])}`);
+    }
+    return parts.join(" · ");
+  }
   function clientDetail(key, linePrice, costLine) {
+    if (key === "management") return managementDetail(costLine && costLine.scope);
     if (costLine && costLine.qty > 0) {
       const perUnit = Math.round(linePrice / costLine.qty);
       const unitShort = costLine.unit === "объявление" ? "объявл" : costLine.unit;
@@ -1011,7 +1076,7 @@ body {
     }
     const mgmtPrice = priceOf(result, "management");
     if (mgmtPrice > 0) {
-      breakdown.push({ label: "Ведение и оптимизация", monthly: mgmtPrice, detail: clientDetail("management", mgmtPrice, null) });
+      breakdown.push({ label: "Ведение и оптимизация", monthly: mgmtPrice, detail: clientDetail("management", mgmtPrice, costLineOf(result, "management")) });
     }
     const autorespPrice = priceOf(result, "autoresponder");
     if (autorespPrice > 0) {
@@ -1215,6 +1280,8 @@ body {
   function stripQty(detail) {
     return detail ? detail.replace(/ × \d+$/, "") : null;
   }
+  var PHASE_ECHO = /* @__PURE__ */ new Set(["ежемесячно", "разовая настройка"]);
+  var meaningfulDetail = (detail) => detail && !PHASE_ECHO.has(detail) ? detail : null;
   function buildQuoteReport(result, config2) {
     const view = toClientView(result, config2);
     const setupItems = [];
@@ -1225,14 +1292,14 @@ body {
       const isSetup = b.setup != null;
       const atMinimum = isSetup && view.setupIsMinimum || !isSetup && view.monthlyIsMinimum;
       if (atMinimum) {
-        const entry2 = { label: b.label, detail: b.note || stripQty(b.detail) };
+        const entry2 = { label: b.label, detail: b.note || meaningfulDetail(stripQty(b.detail)) };
         (isSetup ? setupPackage : monthlyPackage).push(entry2);
         continue;
       }
       const amount = isSetup ? b.setup : b.monthly;
       const entry = {
         label: b.label,
-        detail: b.detail || null,
+        detail: meaningfulDetail(b.detail),
         amount,
         amountText: b.note ? b.note : isSetup ? `${fmtRub(amount)} разово` : `${fmtRub(amount)}/мес`
       };
@@ -1300,7 +1367,8 @@ body {
       if (!list.length) return;
       lines.push("", heading);
       for (const s of list) {
-        lines.push(`• ${s.label}${s.amountText ? ` — ${s.amountText}` : ""}`);
+        const detail = s.detail ? ` (${s.detail})` : "";
+        lines.push(`• ${s.label}${detail}${s.amountText ? ` — ${s.amountText}` : ""}`);
       }
     };
     block("Разовая настройка:", services.filter((s) => s.phase === "setup"));
@@ -1395,14 +1463,23 @@ body {
     const tariffsBox = root.querySelector("#avz-tariffs");
     const placementSelect = root.querySelector("#avz-placement");
     const placementHint = root.querySelector("#avz-placement-hint");
+    const regionSelect = root.querySelector("#avz-regionmode");
+    const regionHint = root.querySelector("#avz-regionmode-hint");
     let activeKey = null;
     function renderPlacementOptions() {
       placementSelect.innerHTML = Object.entries(config2.placement).map(([key, entry]) => `<option value="${key}">${entry.clientLabel} — ${placementPrice(entry)}</option>`).join("");
       placementSelect.value = config2.defaultPlacementLevel || "R2";
     }
-    function updatePlacementHint() {
-      const entry = config2.placement[placementSelect.value];
-      placementHint.textContent = entry ? entry.explain : "";
+    function renderRegionOptions() {
+      regionSelect.innerHTML = Object.entries(config2.regionModes).map(([key, mode]) => `<option value="${key}">${mode.label}</option>`).join("");
+      regionSelect.value = config2.defaultRegionMode || "single";
+    }
+    function updateHints() {
+      const placement = config2.placement[placementSelect.value];
+      placementHint.textContent = placement ? placement.explain : "";
+      const mode = config2.regionModes[regionSelect.value];
+      regionHint.textContent = mode ? mode.note : "";
+      regionHint.classList.toggle("avz-hint-warn", !!(mode && mode.requiresTariff));
     }
     function addItemRow(item) {
       const row = document.createElement("div");
@@ -1446,7 +1523,7 @@ body {
       form.elements["noMonthly"].checked = false;
       activeKey = key;
       renderTariffs();
-      updatePlacementHint();
+      updateHints();
       onChange();
     }
     function renderTariffs() {
@@ -1477,11 +1554,12 @@ body {
     });
     form.addEventListener("change", () => {
       markManual();
-      updatePlacementHint();
+      updateHints();
       onChange();
     });
     renderPlacementOptions();
-    updatePlacementHint();
+    renderRegionOptions();
+    updateHints();
     renderTariffs();
     return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
   }
@@ -1517,7 +1595,7 @@ body {
     </div>`;
   }
   function includesBox(includes) {
-    const list = (phase) => includes.services.filter((s) => s.phase === phase).map((s) => `<li><span>${esc(s.label)}</span>${s.amountText ? `<b>${esc(s.amountText)}</b>` : ""}</li>`).join("");
+    const list = (phase) => includes.services.filter((s) => s.phase === phase).map((s) => `<li><span>${esc(s.label)}${s.detail ? `<i>${esc(s.detail)}</i>` : ""}</span>${s.amountText ? `<b>${esc(s.amountText)}</b>` : ""}</li>`).join("");
     const setup = list("setup");
     const monthly = list("monthly");
     const points = includes.tariffPoints.map((p) => `<li><span>${esc(p)}</span></li>`).join("");
