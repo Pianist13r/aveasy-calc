@@ -1266,8 +1266,15 @@ body{margin:0;background:#f0f3f8}
   function fmtRub(n) {
     return fmtNum(Math.round(n)) + " ₽";
   }
+  function markupPct(price, cost) {
+    return cost === 0 ? null : Math.round((price - cost) / cost * 100);
+  }
   function marginPct(price, cost) {
-    return cost === 0 ? 0 : Math.round((price - cost) / cost * 100);
+    return price === 0 ? 0 : Math.round((price - cost) / price * 100);
+  }
+  function totalsSubtitle(part) {
+    const profit = part.markupPct === null ? "вся цена — прибыль" : `наценка ${fmtNum(part.markupPct)}% · маржа ${fmtNum(part.marginPct)}%`;
+    return `себестоимость ${fmtRub(part.cost)} · ${profit}${part.isMinimum ? " · минимум" : ""}`;
   }
   var AUTORESPONDER_LABELS = { none: "Нет", basic: "Обычный", trainable: "Обучаемый" };
   var ANALYTICS_LABELS = { basic: "Базовая", extended: "Расширенная", crossCrm: "Сквозная + CRM" };
@@ -1378,6 +1385,7 @@ body{margin:0;background:#f0f3f8}
         hours: costLine.hours,
         cost: costLine.cost,
         price: priceLine.price,
+        markupPct: markupPct(priceLine.price, costLine.cost),
         marginPct: marginPct(priceLine.price, costLine.cost)
       };
     }).filter((r) => !(r.cost === 0 && r.price === 0));
@@ -1402,6 +1410,7 @@ body{margin:0;background:#f0f3f8}
       setup: {
         price: result.price.setup,
         cost: result.cost.setup,
+        markupPct: markupPct(result.price.setup, result.cost.setup),
         marginPct: marginPct(result.price.setup, result.cost.setup),
         isMinimum: g.setupMinApplied,
         overCeiling: g.setupOverCeiling
@@ -1409,6 +1418,7 @@ body{margin:0;background:#f0f3f8}
       monthly: {
         price: result.price.monthly,
         cost: result.cost.monthly,
+        markupPct: markupPct(result.price.monthly, result.cost.monthly),
         marginPct: marginPct(result.price.monthly, result.cost.monthly),
         isMinimum: g.minMonthlyApplied,
         overCeiling: g.monthlyOverMarket
@@ -1645,23 +1655,35 @@ body{margin:0;background:#f0f3f8}
   }
   function totalsCard(ctx, cards, x, y, width, draw) {
     const gap = 16;
+    const padX = 18;
+    const padTop = 14;
+    const padBottom = 16;
     const cardWidth = (width - gap * (cards.length - 1)) / cards.length;
-    const height = 118;
-    cards.forEach((card, i) => {
-      const cx = x + i * (cardWidth + gap);
-      if (draw) {
+    const innerWidth = cardWidth - padX * 2;
+    const layout = cards.map((card) => {
+      const labelH = text(ctx, card.label, 0, 0, { weight: 700, size: 12.5, width: innerWidth }, false);
+      const valueH = text(ctx, card.value, 0, 0, { weight: 700, size: 28, width: innerWidth }, false);
+      const subH = card.sub ? text(ctx, card.sub, 0, 0, { weight: 600, size: 13, width: innerWidth }, false) : 0;
+      return { labelH, valueH, subH, total: padTop + labelH + 6 + valueH + (card.sub ? 8 + subH : 0) + padBottom };
+    });
+    const height = Math.max(118, ...layout.map((l) => l.total));
+    if (draw) {
+      cards.forEach((card, i) => {
+        const cx = x + i * (cardWidth + gap);
+        const l = layout[i];
         ctx.fillStyle = card.strong ? T.ink : T.bgSoft;
         roundRect(ctx, cx, y, cardWidth, height, 14);
         ctx.fill();
-      }
-      const inkColor = card.strong ? "#ffffff" : T.ink;
-      const mutedColor = card.strong ? "rgba(255,255,255,.7)" : T.muted;
-      text(ctx, card.label, cx + 18, y + 14, { weight: 700, size: 12.5, color: mutedColor, width: cardWidth - 36 }, draw);
-      text(ctx, card.value, cx + 18, y + 38, { weight: 700, size: 28, color: inkColor, width: cardWidth - 36 }, draw);
-      if (card.sub) {
-        text(ctx, card.sub, cx + 18, y + 78, { weight: 600, size: 13, color: mutedColor, width: cardWidth - 36 }, draw);
-      }
-    });
+        const inkColor = card.strong ? "#ffffff" : T.ink;
+        const mutedColor = card.strong ? "rgba(255,255,255,.7)" : T.muted;
+        let cursor = y + padTop;
+        cursor += text(ctx, card.label, cx + padX, cursor, { weight: 700, size: 12.5, color: mutedColor, width: innerWidth }, true) + 6;
+        cursor += text(ctx, card.value, cx + padX, cursor, { weight: 700, size: 28, color: inkColor, width: innerWidth }, true) + 8;
+        if (card.sub) {
+          text(ctx, card.sub, cx + padX, cursor, { weight: 600, size: 13, color: mutedColor, width: innerWidth }, true);
+        }
+      });
+    }
     return height;
   }
   function roundRect(ctx, x, y, w, h, r) {
@@ -1740,21 +1762,22 @@ body{margin:0;background:#f0f3f8}
   }
   var spacer = (px) => () => px;
   function renderInternalPng(report, { stamp = stampNow() } = {}) {
-    const marginColor = (row) => row.marginPct < 50 ? T.bad : T.ink;
+    const markupColor = (row) => row.markupPct !== null && row.markupPct < 50 ? T.bad : T.ink;
     const rows = report.rows.map((r) => ({
       phase: r.phase,
       label: r.label,
       detail: r.detail,
       cost: fmtRub(r.cost),
       price: fmtRub(r.price),
-      margin: `${fmtNum(r.marginPct)}%`,
-      marginPct: r.marginPct
+      markup: r.markupPct === null ? "—" : `${fmtNum(r.markupPct)}%`,
+      markupPct: r.markupPct
     }));
+    const oneOff = report.monthly.price === 0;
     const changedModel = report.model.filter((m) => m.changed);
     const blocks = [
       (ctx, x, y, w, draw) => header(ctx, {
         title: "Aveasy — внутренний расчёт",
-        subtitle: "Себестоимость, цена клиенту и маржа по каждой строке",
+        subtitle: "Себестоимость, цена клиенту и наценка по каждой строке",
         stamp
       }, x, y, w, draw),
       (ctx, x, y, w, draw) => sectionTitle(ctx, "Параметры расчёта", x, y, w, draw),
@@ -1764,17 +1787,13 @@ body{margin:0;background:#f0f3f8}
         {
           label: "Настройка, разово",
           value: fmtRub(report.setup.price),
-          sub: `себестоимость ${fmtRub(report.setup.cost)} · маржа ${fmtNum(report.setup.marginPct)}%${report.setup.isMinimum ? " · минимум" : ""}`
+          sub: totalsSubtitle(report.setup)
         },
-        {
-          label: "Ведение, в месяц",
-          value: `${fmtRub(report.monthly.price)}`,
-          sub: `себестоимость ${fmtRub(report.monthly.cost)} · маржа ${fmtNum(report.monthly.marginPct)}%${report.monthly.isMinimum ? " · минимум" : ""}`
-        },
+        oneOff ? { label: "Ведение, в месяц", value: "—", sub: "разовый проект — без ежемесячного ведения" } : { label: "Ведение, в месяц", value: fmtRub(report.monthly.price), sub: totalsSubtitle(report.monthly) },
         {
           label: "Первый платёж",
           value: fmtRub(report.firstPayment),
-          sub: "настройка + первый месяц",
+          sub: oneOff ? "только настройка" : "настройка + первый месяц",
           strong: true
         }
       ], x, y, w, draw),
@@ -1786,7 +1805,7 @@ body{margin:0;background:#f0f3f8}
           { title: "Работа", key: "label", weight: 600 },
           { title: "Себестоимость", key: "cost", align: "right" },
           { title: "Цена клиенту", key: "price", align: "right", weight: 700 },
-          { title: "Маржа", key: "margin", align: "right", weight: 700, color: marginColor }
+          { title: "Наценка", key: "markup", align: "right", weight: 700, color: markupColor }
         ],
         fractions: [0.49, 0.17, 0.19, 0.15],
         rows,
@@ -1837,8 +1856,8 @@ body{margin:0;background:#f0f3f8}
         if (item.detail && item.detail !== item.amountText) {
           detailH = text(ctx, item.detail, x, rowY + labelH, { weight: 500, size: 13, color: T.muted, width: labelWidth }, draw);
         }
-        text(ctx, item.amountText, x + w - valueWidth, rowY, { weight: 700, size: 16, color: T.ink, width: valueWidth, align: "right" }, draw);
-        h += Math.max(labelH + detailH, 22) + 10;
+        const amountH = text(ctx, item.amountText, x + w - valueWidth, rowY, { weight: 700, size: 16, color: T.ink, width: valueWidth, align: "right" }, draw);
+        h += Math.max(labelH + detailH, amountH, 22) + 10;
         h += rule(ctx, x, y + h - 5, w, draw, T.lineSoft);
       }
       return h + 12;
@@ -1849,7 +1868,8 @@ body{margin:0;background:#f0f3f8}
         subtitle: "Aveasy — агентство по ведению Авито",
         stamp
       }, x, y, w, draw),
-      (ctx, x, y, w, draw) => totalsCard(ctx, [
+      // При разовом проекте вторая карточка не рисуется: «0 ₽/мес» клиенту читается как ошибка в смете.
+      (ctx, x, y, w, draw) => totalsCard(ctx, quote.monthly === 0 ? [{ label: "Стоимость работ", value: fmtRub(quote.firstPayment), sub: "разовый проект — без ежемесячного ведения", strong: true }] : [
         { label: "Первый платёж", value: fmtRub(quote.firstPayment), sub: "настройка + первый месяц", strong: true },
         { label: "Далее, в месяц", value: fmtRub(quote.monthly), sub: "ведение при том же объёме" }
       ], x, y, w, draw),
@@ -1938,13 +1958,13 @@ body{margin:0;background:#f0f3f8}
         </td>
         <td class="avz-int-num">${esc(fmtRub(r.cost))}</td>
         <td class="avz-int-num avz-int-price">${esc(fmtRub(r.price))}</td>
-        <td class="avz-int-num ${r.marginPct < 50 ? "avz-int-low" : ""}">${esc(fmtNum(r.marginPct))}%</td>
+        <td class="avz-int-num ${r.markupPct !== null && r.markupPct < 50 ? "avz-int-low" : ""}">${r.markupPct === null ? "—" : esc(fmtNum(r.markupPct)) + "%"}</td>
       </tr>`).join("");
     };
     return `
     <table class="avz-int-table">
       <thead>
-        <tr><th>Работа</th><th class="avz-int-num">Себестоимость</th><th class="avz-int-num">Цена клиенту</th><th class="avz-int-num">Маржа</th></tr>
+        <tr><th>Работа</th><th class="avz-int-num">Себестоимость</th><th class="avz-int-num">Цена клиенту</th><th class="avz-int-num">Наценка</th></tr>
       </thead>
       <tbody>
         ${group("setup", "Разовая настройка")}
@@ -1959,19 +1979,12 @@ body{margin:0;background:#f0f3f8}
       <div class="avz-int-card-value">${esc(value)}</div>
       <div class="avz-int-card-sub">${esc(sub)}</div>
     </div>`;
+    const oneOff = report.monthly.price === 0;
     return `
     <div class="avz-int-cards">
-      ${card(
-      "Настройка, разово",
-      fmtRub(report.setup.price),
-      `себестоимость ${fmtRub(report.setup.cost)} · маржа ${fmtNum(report.setup.marginPct)}%${report.setup.isMinimum ? " · минимум" : ""}`
-    )}
-      ${card(
-      "Ведение, в месяц",
-      fmtRub(report.monthly.price),
-      `себестоимость ${fmtRub(report.monthly.cost)} · маржа ${fmtNum(report.monthly.marginPct)}%${report.monthly.isMinimum ? " · минимум" : ""}`
-    )}
-      ${card("Первый платёж", fmtRub(report.firstPayment), "настройка + первый месяц", true)}
+      ${card("Настройка, разово", fmtRub(report.setup.price), totalsSubtitle(report.setup))}
+      ${oneOff ? card("Ведение, в месяц", "—", "разовый проект — без ежемесячного ведения") : card("Ведение, в месяц", fmtRub(report.monthly.price), totalsSubtitle(report.monthly))}
+      ${card("Первый платёж", fmtRub(report.firstPayment), oneOff ? "только настройка" : "настройка + первый месяц", true)}
     </div>`;
   }
   function renderFlags(report) {
