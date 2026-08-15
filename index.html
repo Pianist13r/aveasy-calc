@@ -10,567 +10,586 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#f0f3f8}
-.avz-int-banner{
-  background:#0a1828;color:#fff;font:700 13px/1.4 'Manrope','Segoe UI',Arial,sans-serif;
-  padding:10px 16px;text-align:center;letter-spacing:.02em;
-}
-.avz-int-banner b{color:#00d4ff}
-@media print{.avz-int-banner{display:none}}
-</style>
-<style>
-/* Внутренний слой страницы калькулятора. Палитра — как в блоке 05-pricing (avz-*). */
-.avz-int{
-  background:#fff;color:#0a1828;
-  font-family:'Manrope','Segoe UI',Arial,sans-serif;
-  padding:clamp(32px,5vw,64px) 0;
-  border-top:1px solid rgba(10,24,40,.1);
-}
-.avz-int-wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,3vw,32px)}
+/* Внутренняя страница калькулятора — компоновка «Пульт».
+   Сценарий: менеджер за ноутбуком говорит с клиентом по телефону. Значит крупные цифры,
+   ручки и итог одновременно на экране, ничего важного не прячем под клики. */
 
-.avz-int-head{display:flex;gap:20px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px}
-.avz-int-eyebrow{
-  font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-  color:#0055cc;margin-bottom:6px;
-}
-.avz-int-title{margin:0;font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-.02em}
-
-.avz-int-actions{display:flex;gap:8px;flex-wrap:wrap}
-.avz-int-btn{
-  font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
-  padding:10px 16px;border-radius:10px;
-  border:1px solid rgba(10,24,40,.16);background:#fff;color:#0a1828;
-  transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
-}
-.avz-int-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(10,24,40,.1)}
-.avz-int-btn-main{background:linear-gradient(135deg,#0055cc,#003d99);color:#fff;border-color:transparent}
-.avz-int-btn-client{background:#0a1828;color:#fff;border-color:transparent}
-
-.avz-int-status{
-  margin:0 0 16px;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
-  background:#e8f5ec;color:#0a7d3f;
-}
-.avz-int-status-warn{background:#fff6e0;color:#7a4b00}
-
-.avz-int-block{margin-bottom:22px}
-
-.avz-int-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.avz-int-card{background:#f0f3f8;border-radius:14px;padding:16px 18px}
-.avz-int-card-strong{background:#0a1828;color:#fff}
-.avz-int-card-label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#5a6b80}
-.avz-int-card-strong .avz-int-card-label{color:rgba(255,255,255,.66)}
-.avz-int-card-value{font-size:clamp(22px,2.6vw,30px);font-weight:800;margin:6px 0 4px;font-variant-numeric:tabular-nums}
-.avz-int-card-sub{font-size:12.5px;font-weight:600;color:#5a6b80}
-.avz-int-card-strong .avz-int-card-sub{color:rgba(255,255,255,.66)}
-
-.avz-int-warn{
-  background:#fff6e0;border:1px solid rgba(180,120,0,.35);color:#7a4b00;
-  border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;line-height:1.5;
-}
-.avz-int-warn div + div{margin-top:6px}
-
-.avz-int-sec{
-  font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#5a6b80;
-  padding-bottom:8px;border-bottom:1px solid rgba(10,24,40,.14);margin:26px 0 14px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-}
-.avz-int-reset{
-  font:inherit;font-size:12px;font-weight:700;text-transform:none;letter-spacing:0;
-  cursor:pointer;padding:6px 12px;border-radius:8px;
-  border:1px solid rgba(10,24,40,.16);background:#fff;color:#0a1828;
-}
-.avz-int-note{margin:0 0 14px;font-size:13px;line-height:1.5;color:#5a6b80;max-width:70ch}
-
-.avz-int-params{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 24px}
-.avz-int-param{display:flex;flex-direction:column;gap:2px;font-size:14px}
-.avz-int-param span{font-size:12px;font-weight:700;color:#5a6b80}
-.avz-int-param b{font-weight:600}
-
-.avz-int-scroll{overflow-x:auto}
-.avz-int-table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:620px}
-.avz-int-table th{
-  text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  color:#5a6b80;padding:0 8px 8px;border-bottom:1px solid rgba(10,24,40,.14);
-}
-.avz-int-table td{padding:9px 8px;border-bottom:1px solid rgba(10,24,40,.07);vertical-align:top}
-.avz-int-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.avz-int-price{font-weight:700}
-.avz-int-low{color:#b3261e;font-weight:700}
-.avz-int-group td{
-  font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0055cc;
-  padding-top:16px;border-bottom:none;
-}
-.avz-int-label{display:block;font-weight:600}
-.avz-int-detail{display:block;font-size:12.5px;color:#5a6b80;margin-top:2px}
-
-.avz-int-model{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px 20px}
-.avz-int-field{display:flex;flex-direction:column;gap:4px;font-size:13px}
-.avz-int-field-label{font-weight:700;color:#5a6b80}
-.avz-int-field-input{display:flex;align-items:center;gap:6px}
-.avz-int-field input{
-  font:inherit;font-size:14px;font-weight:600;padding:8px 10px;width:100%;max-width:150px;
-  border:1px solid rgba(10,24,40,.16);border-radius:8px;background:#fff;color:#0a1828;
-}
-.avz-int-field-input i{font-style:normal;font-size:12.5px;font-weight:600;color:#5a6b80}
-.avz-int-field-changed input{border-color:#0055cc;box-shadow:0 0 0 3px rgba(0,85,204,.12)}
-.avz-int-field-base{font-size:12px;font-weight:600;color:#0055cc}
-
-@media (max-width:760px){
-  .avz-int-cards{grid-template-columns:1fr}
-  .avz-int-head{align-items:flex-start}
+:root {
+  --ink: #0a1828;
+  --muted: #5a6b80;
+  --line: rgba(10, 24, 40, .14);
+  --line-soft: rgba(10, 24, 40, .07);
+  --blue: #0055cc;
+  --bg: #f0f3f8;
+  --card: #ffffff;
+  --good: #0a7d3f;
+  --good-bg: #eefaf2;
+  --warn: #7a4b00;
+  --warn-bg: #fff6e0;
+  --bad: #b3261e;
+  --face: 'Manrope', 'Segoe UI', Roboto, Arial, sans-serif;
+  --display: 'Unbounded', var(--face);
 }
 
-@media print{
-  .avz-int-actions,.avz-int-reset,.avz-int-status{display:none !important}
-  .avz-int{padding:0;border-top:none}
-  .avz-int-field input{border:none;padding:0}
-  .avz-pricing{padding:0}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 500 15px/1.45 var(--face);
+}
+
+.avz-banner {
+  background: #0a1828;
+  color: #fff;
+  font: 700 13px/1.4 var(--face);
+  padding: 10px 16px;
+  text-align: center;
+  letter-spacing: .02em;
+}
+.avz-banner b { color: #00d4ff; }
+
+/* --- Шапка: тарифы + вход в параметры модели --- */
+
+.avz-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.avz-tariffs {
+  display: flex;
+  gap: 10px;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.avz-tariff {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--face);
+  transition: border-color .12s, background .12s;
+}
+.avz-tariff:hover { border-color: rgba(0, 85, 204, .45); }
+.avz-tariff-on {
+  border-color: var(--blue);
+  background: #eef4ff;
+}
+.avz-tariff-name { font: 800 16px/1.2 var(--display); }
+.avz-tariff-price { font-size: 12.5px; color: var(--muted); }
+.avz-tariff-on .avz-tariff-price { color: var(--blue); }
+
+.avz-model-btn {
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font: 600 13.5px var(--face);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.avz-model-btn:hover { border-color: var(--blue); color: var(--blue); }
+.avz-model-dot { color: var(--bad); font-size: 11px; vertical-align: 2px; }
+
+/* --- Две колонки --- */
+
+.avz-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 20px;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .avz-main { grid-template-columns: minmax(0, 1fr) 430px; }
+}
+
+/* --- Левая колонка: ручки --- */
+
+.avz-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.avz-field-group {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 14px;
+}
+
+.avz-group-title {
+  grid-column: 1 / -1;
+  font: 800 12px/1 var(--face);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.avz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.avz-field-wide { grid-column: 1 / -1; }
+
+.avz-field input,
+.avz-field select {
+  font: 600 15px var(--face);
+  color: var(--ink);
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  min-height: 40px;
+}
+.avz-field input:focus,
+.avz-field select:focus { outline: 2px solid rgba(0, 85, 204, .35); outline-offset: 1px; }
+
+.avz-toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.avz-toggle input { width: 19px; height: 19px; accent-color: var(--blue); }
+
+/* Строка товара: количество — главная ручка разговора, поэтому крупнее прочего */
+
+#items-container { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
+
+.item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.avz-qty {
+  width: 120px;
+  font: 800 23px var(--face);
+  text-align: center;
+  padding: 6px 8px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+.avz-qty:focus { outline: 2px solid rgba(0, 85, 204, .35); border-color: var(--blue); }
+
+.item-row select {
+  flex: 1 1 150px;
+  min-width: 140px;
+  font: 600 14px var(--face);
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  min-height: 40px;
+}
+
+.avz-item-remove {
+  border: none;
+  background: none;
+  color: var(--bad);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.avz-add-item {
+  grid-column: 1 / -1;
+  justify-self: start;
+  border: 1px dashed var(--line);
+  background: none;
+  color: var(--muted);
+  border-radius: 9px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: 600 13px var(--face);
+}
+.avz-add-item:hover { color: var(--blue); border-color: var(--blue); }
+
+/* --- Правая колонка: итог, сверка, что входит --- */
+
+.avz-summary {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Влезает в первый экран и до прокрутки (когда над колонкой ещё виден баннер),
+     и после — когда шапка прилипла. Что не поместилось, скроллится внутри колонки. */
+  max-height: calc(100vh - 165px);
+  overflow-y: auto;
+}
+
+.avz-cards {
+  display: grid;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.avz-card + .avz-card { border-top: 1px solid var(--line-soft); padding-top: 10px; }
+.avz-card-label { font-size: 12.5px; color: var(--muted); }
+.avz-card-value { font: 800 31px/1.1 var(--display); letter-spacing: -.01em; }
+.avz-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.avz-card-strong .avz-card-value { color: var(--blue); }
+
+.avz-fit {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+.avz-fit-ok { border-color: rgba(10, 125, 63, .5); background: var(--good-bg); }
+.avz-fit-over { border-color: rgba(180, 120, 0, .45); background: var(--warn-bg); }
+.avz-fit-none { color: var(--muted); font-size: 13.5px; }
+.avz-fit-head { font: 800 15px var(--face); }
+.avz-fit-note { font-size: 13.5px; margin-top: 3px; }
+.avz-fit-margin { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.avz-fit-low { color: var(--bad); font-weight: 700; }
+
+.avz-warn {
+  background: var(--warn-bg);
+  border: 1px solid rgba(180, 120, 0, .35);
+  color: var(--warn);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  display: grid;
+  gap: 5px;
+}
+
+.avz-inc {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px 14px;
+}
+.avz-inc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font: 800 15px var(--face);
+}
+.avz-inc-copy {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font: 600 12px var(--face);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.avz-inc-copy:hover { color: var(--blue); border-color: var(--blue); }
+.avz-inc-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font: 800 11px var(--face);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
+.avz-inc-sub b { color: var(--ink); white-space: nowrap; }
+.avz-inc-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.avz-inc-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+  padding-left: 15px;
+  position: relative;
+}
+.avz-inc-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--good);
+  font-size: 12px;
+}
+.avz-inc-list b { white-space: nowrap; }
+.avz-inc-points li::before { content: '•'; color: var(--blue); }
+
+/* --- Нижняя секция: выгрузки и разбор --- */
+
+.avz-bottom { padding: 0 20px 26px; }
+
+.avz-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+.avz-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font: 700 13.5px var(--face);
+  cursor: pointer;
+}
+.avz-btn:hover { border-color: var(--blue); color: var(--blue); }
+.avz-btn-main { background: var(--ink); color: #fff; border-color: var(--ink); }
+.avz-btn-main:hover { background: #16304d; color: #fff; }
+.avz-btn-client { background: var(--blue); color: #fff; border-color: var(--blue); }
+.avz-btn-client:hover { color: #fff; opacity: .9; }
+
+.avz-status {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  background: var(--good-bg);
+  color: var(--good);
+}
+.avz-status-warn { background: var(--warn-bg); color: var(--warn); }
+
+.avz-rows-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+.avz-rows-box > summary {
+  cursor: pointer;
+  font: 700 14px var(--face);
+  color: var(--muted);
+}
+.avz-rows-box[open] > summary { color: var(--ink); margin-bottom: 10px; }
+
+#avz-rows { overflow-x: auto; }
+
+.avz-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 5px 16px;
+  margin-bottom: 12px;
+}
+.avz-param {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  border-bottom: 1px dotted var(--line-soft);
+  padding: 3px 0;
+}
+.avz-param b { color: var(--ink); text-align: right; }
+
+.avz-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
+.avz-table th {
+  text-align: left;
+  font: 800 11.5px var(--face);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.avz-table td { padding: 7px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.avz-num { text-align: right; white-space: nowrap; }
+.avz-num-price { font-weight: 700; }
+.avz-num-low { color: var(--bad); font-weight: 700; }
+.avz-row-group td {
+  font: 800 11.5px var(--face);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 14px;
+  border-bottom: none;
+}
+.avz-row-label { display: block; font-weight: 600; }
+.avz-row-detail { display: block; font-size: 12px; color: var(--muted); }
+
+/* --- Боковая панель «что если» --- */
+
+.avz-model {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: min(430px, 92vw);
+  background: var(--card);
+  border-left: 1px solid var(--line);
+  box-shadow: -18px 0 40px rgba(10, 24, 40, .16);
+  padding: 16px 18px 40px;
+  overflow-y: auto;
+  z-index: 40;
+}
+.avz-model[hidden] { display: none; }
+
+.avz-model-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 17px;
+}
+.avz-model-close {
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px 6px;
+}
+.avz-model-note { font-size: 12.5px; color: var(--muted); margin: 6px 0 10px; }
+.avz-model-reset {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 9px;
+  padding: 7px 12px;
+  font: 600 13px var(--face);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.avz-model-fields { display: grid; gap: 9px; }
+
+.avz-mfield { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.avz-mfield-input { display: flex; align-items: center; gap: 7px; }
+.avz-mfield-input input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 600 14px var(--face);
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+}
+.avz-mfield-input i { font-style: normal; font-size: 12px; color: var(--muted); min-width: 58px; }
+.avz-mfield-changed .avz-mfield-input input { border-color: var(--blue); background: #eef4ff; }
+.avz-mfield-base { font-size: 11.5px; color: var(--blue); }
+
+/* --- Печать --- */
+
+@media print {
+  .avz-banner, .avz-top, .avz-actions, .avz-model, .avz-status, .avz-add-item { display: none !important; }
+  body { background: #fff; }
+  .avz-main { grid-template-columns: 1fr; padding: 0; }
+  .avz-summary { position: static; max-height: none; overflow: visible; }
+  .avz-rows-box { border: none; padding: 0; }
+  .avz-table { min-width: 0; }
 }
 
 </style>
 </head>
 <body>
-<div class="avz-int-banner">Внутренний инструмент Aveasy — <b>себестоимость и маржа видны на этой странице</b>. Клиенту отправляйте выгрузку «Для клиента», а не ссылку.</div>
-<!-- avz 05-pricing «Тарифы и стоимость» — калькулятор PIA-279 вместо тарифной сетки.
-  T123 для Tilda, самодостаточный (см. site-tilda/README.md + docs/site-relaunch/tilda-redesign-concept.md, п.6).
-  Движок — верстка/логика PIA-279 (core/pricing), инлайн ИЗ ГОТОВОГО БАНДЛА site/assets/calc.bundle.js
-  (собран esbuild'ом из web/widget-entry.js, скопирован сюда БЕЗ ИЗМЕНЕНИЙ — см. комментарий перед бандлом).
-  Пресеты — строго «Старт / Бизнес / Премиум» (config/pricing.config.js:410-453), имена не меняем.
-  Обязательные id/name для движка (widget.js): #ave-form, #ave-out, #ave-presets, #ave-regionmode-note,
-  name=accounts/regions/regionMode/placementLevel/autoresponder/analytics/promotionMgmt/noMonthly — НЕ трогать.
-  Классы, которые рендерит сам движок (ave-preset-card/.totals/.total/.row/.note/.cta/.breakdown/...) —
-  тоже не переименовать (пришли бы несовпадением); все ОСТАЛЬНЫЕ обёрточные классы — с префиксом avz-.
-  Результат расчёта уходит на шину: window.AVZ.calc (последний снимок) + событие avz:calc
-  (совместимо с AVZ.captureCalc из 00-foundation) — слушает форма #lead в 08-lead.
-  Деградации: no-JS → статичный ориентир из контент-констант (18 000 ₽ / 12 000 ₽ — реальные пороги
-  config.setupMin/minMonthly, не выдуманы) вместо интерактивного виджета; prefers-reduced-motion →
-  без transition/анимаций reveal; <760px → пресеты и форма в один столбец. -->
-<style>
-.avz-pricing{
-  position:relative;overflow:hidden;
-  background:var(--avz-light-bg,#f0f3f8);
-  color:var(--avz-ink,#0a1828);
-  font-family:'Manrope',Arial,sans-serif;
-  padding:clamp(48px,7vw,88px) 0;
-}
-/* приём донора: тонкая координатная сетка (радиальная маска) + пара голубых подсветок на светлом фоне */
-.avz-pricing::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background-image:linear-gradient(rgba(10,24,40,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,24,40,.05) 1px,transparent 1px);
-  background-size:64px 64px;
-  -webkit-mask-image:radial-gradient(80% 65% at 78% 12%,#000,transparent 78%);
-  mask-image:radial-gradient(80% 65% at 78% 12%,#000,transparent 78%);
-}
-.avz-pricing::after{
-  content:"";position:absolute;pointer-events:none;right:-140px;bottom:-140px;width:380px;height:380px;
-  border-radius:50%;background:radial-gradient(circle,rgba(0,153,238,.1),transparent 70%);
-}
-.avz-p-wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 clamp(18px,4vw,56px)}
-.avz-p-head{max-width:64ch}
-.avz-eyebrow{
-  display:flex;align-items:center;gap:10px;margin:0 0 14px;
-  font-family:'Manrope',Arial,sans-serif;font-weight:700;font-size:13px;
-  letter-spacing:.08em;text-transform:uppercase;color:#0055cc;
-}
-.avz-eyebrow::before{content:"→";color:#00a9d6}
-.avz-title{
-  margin:0 0 16px;font-family:'Unbounded',Arial,sans-serif;font-weight:700;
-  letter-spacing:-.02em;line-height:1.08;font-size:clamp(26px,3.6vw,44px);color:var(--avz-ink,#0a1828);
-}
-.avz-anchors{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.avz-anchor{
-  --c:8px;display:inline-flex;align-items:center;padding:9px 16px;font-size:13.5px;font-weight:700;
-  color:#0a1828;background:#fff;border:1px solid rgba(10,24,40,.1);
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-}
-/* .avz-p-lede: НЕ .avz-lead — тот класс носит секция #lead блока 08 (глобальный неймспейс страницы),
-   коллизия тащила сюда её padding/фон (баг превью 2026-08-06) */
-.avz-p-lede{margin:0 0 10px;font-size:16px;line-height:1.55;color:var(--avz-ink,#0a1828)}
-.avz-p-lede b{color:#0055cc}
-.avz-subnote{margin:0 0 32px;font-size:13.5px;line-height:1.5;color:rgba(10,24,40,.62)}
+<div class="avz-banner">Внутренний инструмент Aveasy — <b>себестоимость и маржа видны на этой странице</b>. Клиенту отправляйте выгрузку «Для клиента», а не ссылку.</div>
 
-/* ===== карточка калькулятора ===== */
-.avz-calc-shell{
-  --c:20px;position:relative;background:#fff;
-  /* тень даёт обёртка .avz-dsh (блок 00): box-shadow здесь срезался бы clip-path'ом */
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-  padding:clamp(20px,3vw,36px);
-}
-/* верхний акцент-бар с glow (приём донора) — псевдослой, не задевает движок под ним */
-.avz-calc-shell::before{
-  content:"";position:absolute;left:0;right:0;top:0;height:4px;z-index:1;pointer-events:none;
-  background:linear-gradient(90deg,#0055cc,#00d4ff);box-shadow:0 0 16px rgba(0,212,255,.5);
-}
-/* псевдо-UI статусбар над виджетом — чисто декоративный (aria-hidden в разметке), без новых слов */
-.avz-p-statusbar{display:flex;align-items:center;gap:8px;margin:2px 0 18px}
-.avz-p-statusbar i{width:7px;height:7px;border-radius:50%;background:rgba(10,24,40,.14);flex:0 0 auto}
-.avz-p-statusbar i:first-child{background:#00d4ff;box-shadow:0 0 6px #00d4ff}
-.avz-p-statusbar .avz-p-statusbar-rule{flex:1 1 auto;height:1px;background:linear-gradient(90deg,rgba(10,24,40,.12),transparent)}
-.avz-nojs{
-  padding:18px 20px;background:#f4f7fb;border:1px dashed rgba(0,85,204,.35);font-size:14.5px;line-height:1.55;
-}
-.avz-nojs a{color:#0055cc}
+<header class="avz-top">
+  <div class="avz-tariffs" id="avz-tariffs"></div>
+  <button type="button" class="avz-model-btn" id="avz-model-toggle">
+    Параметры модели <span class="avz-model-dot" hidden>●</span>
+  </button>
+</header>
 
-/* виджет спрятан по умолчанию (без JS) — открывается классом avz-js на секции */
-#ave-calc-widget{display:none}
-.avz-js #ave-calc-widget{display:block}
-
-.avz-calc-lead{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--avz-ink,#0a1828)}
-
-/* пресеты (рендерятся движком в #ave-presets: .ave-preset-card/.ave-preset-label/... ) */
-#ave-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px}
-.ave-preset-card{
-  --c:12px;position:relative;overflow:hidden;padding:20px 16px 18px;background:#f7f9fc;border:1px solid rgba(10,24,40,.08);
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-  display:flex;flex-direction:column;gap:4px;
-  transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease,background .2s ease;
-}
-/* тонкая верхняя полоска в градиенте — приём донора (свои селекторы, класс движка не трогаем) */
-.ave-preset-card::before{
-  content:"";position:absolute;pointer-events:none;left:0;right:0;top:0;height:3px;
-  background:linear-gradient(90deg,#0055cc,#00d4ff);opacity:.7;transition:opacity .2s ease;
-}
-.ave-preset-card:hover{
-  border-color:rgba(0,85,204,.4);transform:translateY(-3px);background:#fff;
-}
-.ave-preset-card:hover::before{opacity:1}
-/* «Бизнес» — средний пресет (2-й по порядку config.presets: start/business/premium) — бейдж чисто CSS,
-   без текста (ЧТОБЫ не выдумывать новых слов) */
-#ave-presets .ave-preset-card:nth-child(2){border-color:rgba(0,212,255,.4)}
-#ave-presets .ave-preset-card:nth-child(2)::after{
-  content:"";position:absolute;pointer-events:none;top:10px;right:10px;width:9px;height:9px;border-radius:50%;
-  background:#00d4ff;box-shadow:0 0 8px #00d4ff;
-}
-.ave-preset-label{font-family:'Unbounded',Arial,sans-serif;font-weight:700;font-size:17px;color:var(--avz-ink,#0a1828)}
-.ave-preset-sub{font-size:12px;line-height:1.4;color:rgba(10,24,40,.58);min-height:34px}
-.ave-preset-price{font-family:'Unbounded',Arial,sans-serif;font-weight:800;font-size:19px;margin-top:6px;color:#0055cc}
-.ave-preset-monthly{font-size:13px;color:rgba(10,24,40,.62)}
-.ave-preset-btn{
-  --c:8px;margin-top:10px;padding:9px 14px;font-size:13px;font-weight:700;color:#fff;border:0;cursor:pointer;
-  background:var(--avz-btn-grad,linear-gradient(135deg,#0055cc,#003d99));
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-}
-
-/* результат (рендерится движком в #ave-out: .totals/.total/.breakdown/.note/.cta ...) */
-#ave-out .totals{display:flex;gap:14px;margin:4px 0 16px;flex-wrap:wrap}
-#ave-out .total{
-  --c:14px;flex:1 1 200px;position:relative;overflow:hidden;padding:16px 18px;color:#fff;
-  background:var(--avz-dark-grad,linear-gradient(148deg,#061022 0%,#0c1e40 30%,#112856 62%,#1a3d96 100%));
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-}
-/* лёгкая внутренняя сетка + угловой блик (приём донора) — свои селекторы поверх готовой карточки */
-#ave-out .total::before{
-  content:"";position:absolute;z-index:0;inset:0;pointer-events:none;opacity:.5;
-  background-image:linear-gradient(rgba(140,180,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(140,180,255,.14) 1px,transparent 1px);
-  background-size:18px 18px;
-  -webkit-mask-image:radial-gradient(90% 120% at 100% 0%,#000,transparent 70%);
-  mask-image:radial-gradient(90% 120% at 100% 0%,#000,transparent 70%);
-}
-#ave-out .total::after{
-  content:"";position:absolute;z-index:0;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,212,255,.22),transparent 70%);pointer-events:none;
-}
-#ave-out .total > *{position:relative;z-index:1}
-#ave-out .total span{display:block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(220,235,255,.66)}
-#ave-out .total b{
-  display:block;margin-top:6px;font-family:'Unbounded',Arial,sans-serif;font-weight:800;letter-spacing:-.01em;
-  font-size:clamp(20px,2.4vw,26px);color:var(--avz-accent,#00d4ff);
-  text-shadow:var(--avz-accent-glow-sm,0 0 10px #00d4ff);font-variant-numeric:tabular-nums;
-}
-#ave-out .ave-total-sub{margin-top:4px;font-size:11px;color:rgba(220,235,255,.5)}
-#ave-out .breakdown{margin:12px 0;font-size:14px}
-#ave-out .ave-pkg-header{font-weight:700;font-size:12.5px;margin:12px 0 4px;color:rgba(10,24,40,.6);text-transform:uppercase;letter-spacing:.04em}
-#ave-out .ave-pkg-item{padding:3px 0;color:rgba(10,24,40,.72);font-size:13.5px}
-#ave-out .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(10,24,40,.08)}
-#ave-out .row b{font-weight:700;white-space:nowrap}
-#ave-out .note{font-size:12.5px;line-height:1.5;color:rgba(10,24,40,.58);margin:10px 0}
-#ave-out .note.ave-preliminary{color:#a15c00}
-#ave-out .cta{
-  --c:12px;margin-top:6px;padding:14px 26px;font-family:'Manrope',Arial,sans-serif;font-weight:700;font-size:15px;
-  color:#fff;border:0;cursor:pointer;background:var(--avz-btn-grad-2,linear-gradient(135deg,#0055cc 0%,#0099ee 100%));
-  box-shadow:var(--avz-btn-shadow,0 24px 60px rgba(0,85,204,.35));
-  clip-path:polygon(var(--c) 0%,calc(100% - var(--c)) 0%,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0% calc(100% - var(--c)),0% var(--c));
-}
-
-/* «настроить точнее» — details/summary + форма */
-.avz-calc-adv{margin-top:6px;border-top:1px solid rgba(10,24,40,.1);padding-top:14px}
-.avz-calc-adv summary{
-  cursor:pointer;list-style:none;font-weight:700;font-size:14px;color:#0055cc;
-  display:flex;align-items:center;gap:6px;user-select:none;
-}
-.avz-calc-adv summary::-webkit-details-marker{display:none}
-.avz-chev{transition:transform .2s}
-.avz-calc-adv[open] .avz-chev{transform:rotate(180deg)}
-.avz-cf-sec{
-  display:flex;align-items:center;gap:8px;margin:18px 0 10px;font-weight:700;font-size:13px;
-  text-transform:uppercase;letter-spacing:.04em;color:rgba(10,24,40,.55);
-}
-.avz-cf-ic{color:#0055cc}
-.avz-cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
-.avz-cf-field{display:block;font-size:12.5px;font-weight:600;color:rgba(10,24,40,.62)}
-.avz-cf-field input,.avz-cf-field select{
-  width:100%;margin-top:5px;padding:9px 10px;font-size:14px;font-family:'Manrope',Arial,sans-serif;
-  color:var(--avz-ink,#0a1828);background:#fff;border:1px solid rgba(10,24,40,.16);box-sizing:border-box;
-}
-.avz-cf-wide{grid-column:1 / -1}
-.avz-param-hint,#ave-out .param-hint,.avz-calc-shell .param-hint{
-  display:block;grid-column:1 / -1;font-size:11.5px;line-height:1.45;color:rgba(10,24,40,.5);margin:-4px 0 4px;
-}
-.avz-cf-toggle{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--avz-ink,#0a1828)}
-.avz-cf-toggle input{width:auto;margin:0;accent-color:#0055cc}
-
-/* строки товаров, создаваемые движком динамически (#items-container .item-row) */
-.avz-calc-shell #items-container{grid-column:1 / -1}
-.avz-calc-shell .item-row{
-  display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;
-}
-.avz-calc-shell .item-row select,.avz-calc-shell .item-row input{
-  padding:8px 9px;font-size:13.5px;font-family:'Manrope',Arial,sans-serif;border:1px solid rgba(10,24,40,.16);background:#fff;
-}
-.avz-calc-shell .item-remove{background:none;border:none;color:#c00;cursor:pointer;font-size:15px}
-.avz-calc-shell #items-container ~ button{
-  grid-column:1 / -1;justify-self:start;background:none;border:1px dashed rgba(0,85,204,.4);color:#0055cc;
-  padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;margin:4px 0 8px;
-}
-
-/* Гейт под маркер секции (#calc.avz-js ставит скрипт ниже): без JS ничего не прячем —
-   негейтированная версия ломала no-JS и себе, и блоку 02 (находка GLM-ревью 2026-08-05). */
-#calc.avz-js .avz-reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
-#calc.avz-js .avz-reveal.avz-in{opacity:1;transform:none}
-
-@media (max-width:900px){
-  #ave-presets{grid-template-columns:1fr}
-  .avz-cf-grid{grid-template-columns:1fr}
-}
-@media (max-width:759px){
-  #ave-out .totals{flex-direction:column}
-}
-@media (prefers-reduced-motion:reduce){
-  .avz-pricing *,.avz-pricing *::before,.avz-pricing *::after{transition:none!important;animation:none!important}
-  .avz-reveal{opacity:1!important;transform:none!important}
-  .ave-preset-card:hover{transform:none}
-}
-</style>
-
-<section class="avz-pricing" id="calc" aria-labelledby="avz-p-title">
-  <div class="avz-p-wrap">
-
-    <div class="avz-p-head avz-reveal">
-      <div class="avz-eyebrow">прозрачно</div>
-      <h2 class="avz-title" id="avz-p-title">Тарифы и стоимость</h2>
-      <div class="avz-anchors">
-        <span class="avz-anchor">Стартовая настройка — от 18 000 ₽ разово</span>
-        <span class="avz-anchor">Ведение — от 12 000 ₽/мес</span>
-      </div>
-      <p class="avz-p-lede">Две части — и обе по вашему выбору. Нужна <b>только настройка</b> кабинета — сделаем её разово. Нужно, чтобы <b>вели дальше</b> — возьмём на ведение. Можем и просто настроить, и начать вести уже <b>готовый, настроенный кабинет</b>. Соберите свой вариант в калькуляторе — расчёт предварительный, финальную смету подтвердим после бесплатного анализа.</p>
-      <p class="avz-subnote">Бюджет на платные сервисы Авито оплачивается площадке напрямую и в наши услуги не входит — применяем его по данным и не всегда, только когда это оправдано.</p>
+<main class="avz-main">
+  <form class="avz-controls" id="ave-form">
+    <div class="avz-field-group">
+      <div class="avz-group-title">Товар и объём</div>
+      <div id="items-container"></div>
+      <button type="button" class="avz-add-item" id="avz-add-item">+ ещё тип товара</button>
     </div>
 
-    <div class="avz-dsh">
-    <div class="avz-calc-shell avz-reveal">
-      <div class="avz-p-statusbar" aria-hidden="true"><i></i><i></i><i></i><span class="avz-p-statusbar-rule"></span></div>
-      <noscript>
-        <div class="avz-nojs">
-          <b>Ориентир без интерактивного расчёта:</b> настройка — от 18 000 ₽ разово, ведение — от 12 000 ₽/мес.
-          Итоговая сумма зависит от объёма и параметров кабинета — включите JavaScript для точного расчёта
-          или <a href="#lead">оставьте заявку</a>, посчитаем вручную.
-        </div>
-      </noscript>
-
-      <div class="ave-calc" id="ave-calc-widget">
-        <div class="avz-calc-lead">Выберите готовый пакет — или настройте под свой случай ниже.</div>
-        <!-- НЕ менять id ниже — их читает движок (widget.js/calc.bundle.js) -->
-        <div id="ave-presets"></div>
-        <div id="ave-out"></div>
-        <details class="avz-calc-adv">
-          <summary>Настроить точнее под свой случай <span class="avz-chev" aria-hidden="true">▾</span></summary>
-          <form id="ave-form" class="avz-cf-grid">
-            <div class="avz-cf-sec"><span class="avz-cf-ic" aria-hidden="true">▦</span>Масштаб</div>
-            <label class="avz-cf-field">Аккаунтов <input type="number" name="accounts" value="1" min="1"></label>
-            <label class="avz-cf-field">Регионов <input type="number" name="regions" value="1" min="1"></label>
-            <label class="avz-cf-field avz-cf-wide">Как размещаем по регионам
-              <select name="regionMode">
-                <option value="single">Одно объявление на все регионы</option>
-                <option value="repeat" selected>Одно объявление, размещаем в каждом регионе</option>
-                <option value="distinct">Свои объявления под каждый регион</option>
-              </select>
-            </label>
-            <small class="avz-param-hint" id="ave-regionmode-note"></small>
-
-            <div class="avz-cf-sec avz-cf-wide"><span class="avz-cf-ic" aria-hidden="true">✎</span>Контент и услуги</div>
-            <label class="avz-cf-field avz-cf-wide">Как у вас сейчас с данными о товарах?
-              <select name="placementLevel">
-                <option value="R1">Уже настроена автозагрузка на Авито</option>
-                <option value="R2" selected>Есть прайс-лист / таблица товаров</option>
-                <option value="R3">Данные разрозненные, нужна интеграция</option>
-                <option value="R4">Готовых данных нет, размещаем вручную</option>
-              </select>
-            </label>
-            <label class="avz-cf-field">Автоответчик
-              <select name="autoresponder">
-                <option value="none">Нет</option>
-                <option value="basic" selected>Обычный</option>
-                <option value="trainable">Обучаемый</option>
-              </select>
-            </label>
-            <label class="avz-cf-field">Аналитика
-              <select name="analytics">
-                <option value="basic" selected>Базовая</option>
-                <option value="extended">Расширенная</option>
-                <option value="crossCrm">Сквозная + CRM</option>
-              </select>
-            </label>
-
-            <div class="avz-cf-sec avz-cf-wide"><span class="avz-cf-ic" aria-hidden="true">⚙</span>Опции</div>
-            <label class="avz-cf-toggle"><input type="checkbox" name="promotionMgmt"> Управление продвижением</label>
-            <label class="avz-cf-toggle"><input type="checkbox" name="noMonthly"> Разовый проект — без ежемесячного ведения</label>
-          </form>
-        </details>
-      </div>
+    <div class="avz-field-group">
+      <div class="avz-group-title">Масштаб</div>
+      <label class="avz-field">Аккаунтов
+        <input type="number" name="accounts" value="1" min="1" step="1">
+      </label>
+      <label class="avz-field">Регионов
+        <input type="number" name="regions" value="1" min="1" step="1">
+      </label>
+      <label class="avz-field avz-field-wide">Как размещаем по регионам
+        <select name="regionMode">
+          <option value="single">Одно объявление на все регионы</option>
+          <option value="repeat" selected>Одно объявление, публикуем в каждом регионе</option>
+          <option value="distinct">Свои объявления под каждый регион</option>
+        </select>
+      </label>
     </div>
-    </div><!-- /.avz-dsh -->
 
+    <div class="avz-field-group">
+      <div class="avz-group-title">Услуги</div>
+      <label class="avz-field avz-field-wide">Данные о товарах
+        <select name="placementLevel">
+          <option value="R1">R1 — готовый фид</option>
+          <option value="R2" selected>R2 — прайс-лист / таблица</option>
+          <option value="R3">R3 — нужна интеграция</option>
+          <option value="R4">R4 — размещаем вручную</option>
+        </select>
+      </label>
+      <label class="avz-field">Автоответчик
+        <select name="autoresponder">
+          <option value="none">Нет</option>
+          <option value="basic" selected>Обычный</option>
+          <option value="trainable">Обучаемый</option>
+        </select>
+      </label>
+      <label class="avz-field">Аналитика
+        <select name="analytics">
+          <option value="basic" selected>Базовая</option>
+          <option value="extended">Расширенная</option>
+          <option value="crossCrm">Сквозная + CRM</option>
+        </select>
+      </label>
+      <label class="avz-toggle"><input type="checkbox" name="promotionMgmt"><span>Управление продвижением</span></label>
+      <label class="avz-toggle"><input type="checkbox" name="noMonthly"><span>Разовый проект — без ведения</span></label>
+    </div>
+  </form>
+
+  <aside class="avz-summary" id="avz-summary"></aside>
+</main>
+
+<section class="avz-bottom">
+  <div class="avz-actions" id="avz-actions">
+    <button type="button" class="avz-btn avz-btn-main" data-act="png-internal">Скачать внутренний расчёт</button>
+    <button type="button" class="avz-btn" data-act="copy-internal">Копировать картинку</button>
+    <button type="button" class="avz-btn avz-btn-client" data-act="png-quote">Выгрузить для клиента</button>
+    <button type="button" class="avz-btn" data-act="copy-quote">Копировать КП</button>
+    <button type="button" class="avz-btn" data-act="print">Печать / PDF</button>
   </div>
+  <div class="avz-status" id="avz-status" hidden></div>
+  <details class="avz-rows-box">
+    <summary>Разбор по строкам — себестоимость, цена, наценка</summary>
+    <div id="avz-rows"></div>
+  </details>
 </section>
 
-<script>
-// Ранний переключатель JS/no-JS: без него виджет спрятан (#ave-calc-widget{display:none} в CSS выше),
-// вместо него виден <noscript>-ориентир. Выполняется сразу за разметкой — до бандла движка ниже.
-(function () {
-  var sec = document.getElementById('calc');
-  if (sec) sec.classList.add('avz-js');
-})();
-</script>
+<aside class="avz-model" id="avz-model-panel" hidden></aside>
 
-<!-- бандл движка вырезан сборкой: ниже подставлен свежий, собранный из core/pricing -->
-
-<script>
-// ===== Мост на шину AVZ: результат расчёта → window.AVZ.calc + событие avz:calc =====
-// Совместимо с AVZ.captureCalc из 00-foundation (dispatchEvent('avz:calc')). Слушает форма #lead (08-lead).
-// Поскольку движок выше пересчитывает #ave-out синхронно (input/клик по пресету/CTA), а не через
-// собственное событие, снимаем итог MutationObserver'ом за #ave-out — это ловит вообще любой пересчёт,
-// включая самый первый (при монтировании) и смену пресета.
-(function () {
-  "use strict";
-  var sec = document.getElementById('calc');
-  var out = document.getElementById('ave-out');
-  if (!sec || !out) return;
-
-  function readTotals() {
-    var b = out.querySelectorAll('.totals .total b');
-    if (b.length < 2) return null;
-    return { setupText: b[0].textContent.trim(), monthlyText: b[1].textContent.trim() };
-  }
-
-  var touched = false; // пользователь трогал калькулятор (input/пресет/CTA) — как calcTouched в прототипе
-  var formEl = document.getElementById('ave-form');
-  if (formEl) {
-    ['input', 'change'].forEach(function (t) {
-      formEl.addEventListener(t, function () { touched = true; }, true);
-    });
-    // Enter в числовом поле не должен сабмитить/перезагружать страницу (бандл движка не блокирует сам)
-    formEl.addEventListener('submit', function (e) { e.preventDefault(); });
-  }
-  sec.addEventListener('click', function (e) {
-    if (e.target && e.target.closest && (e.target.closest('.ave-preset-btn') || e.target.closest('#ave-cta'))) touched = true;
-  }, true);
-
-  // Полный снапшот в формате captureCalc() прототипа (site/assets/site.js:114) — тот же контракт
-  // calc_full разбирает бэкенд lead.py/alert.py («Что настроил клиент» в Telegram), а totals[]
-  // использует 08-lead для короткого эха в форме.
-  function fullSnapshot() {
-    var form = document.getElementById('ave-form');
-    function optText(el) { return (el && el.selectedOptions && el.selectedOptions[0]) ? el.selectedOptions[0].textContent.trim() : (el ? el.value : ''); }
-    function sel(name) { return form ? optText(form.elements[name]) : ''; }
-    function v(name) { var el = form && form.elements[name]; return el ? el.value : ''; }
-    function chk(name) { var el = form && form.elements[name]; return el ? !!el.checked : false; }
-    var items = [];
-    if (form) [].forEach.call(form.querySelectorAll('.item-row'), function (row) {
-      items.push({
-        type: optText(row.querySelector('[name="itemType"]')),
-        listings: Number((row.querySelector('[name="itemListings"]') || {}).value) || 0,
-        content: optText(row.querySelector('[name="itemContentStatus"]'))
-      });
-    });
-    var totals = [];
-    [].forEach.call(out.querySelectorAll('.totals .total'), function (t) {
-      var s = t.querySelector('span'), b = t.querySelector('b');
-      totals.push(((s ? s.textContent.trim() : '') + ' ' + (b ? b.textContent.trim() : '')).trim());
-    });
-    var breakdown = [];
-    [].forEach.call(out.querySelectorAll('.ave-pkg-item'), function (r) { breakdown.push(r.textContent.trim()); });
-    [].forEach.call(out.querySelectorAll('.breakdown .row'), function (r) {
-      var s = r.querySelector('span'), b = r.querySelector('b');
-      if (s && b) breakdown.push(s.textContent.trim() + ' — ' + b.textContent.trim());
-    });
-    return {
-      touched: touched,
-      settings: {
-        accounts: v('accounts'), regions: v('regions'),
-        regionMode: sel('regionMode'), placement: sel('placementLevel'),
-        autoresponder: sel('autoresponder'), analytics: sel('analytics'),
-        promotion: chk('promotionMgmt'), oneOff: chk('noMonthly'),
-        items: items
-      },
-      totals: totals,
-      breakdown: breakdown.slice(0, 30)
-    };
-  }
-
-  function emit(extra) {
-    var t = readTotals();
-    if (!t) return;
-    var data = fullSnapshot();
-    data.setup = t.setupText;     // краткие поля — совместимость с ранними потребителями снапшота
-    data.monthly = t.monthlyText;
-    data.source = 'calc';
-    if (extra) { for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) data[k] = extra[k]; }
-    window.AVZ = window.AVZ || {};
-    window.AVZ.calc = data; // снимок для блоков, монтирующихся позже (08-lead читает на submit)
-    if (typeof window.AVZ.captureCalc === 'function') {
-      window.AVZ.captureCalc(data); // шлёт CustomEvent('avz:calc', {detail: data})
-    } else {
-      document.dispatchEvent(new CustomEvent('avz:calc', { detail: data }));
-    }
-  }
-
-  if ('MutationObserver' in window) {
-    new MutationObserver(function () { emit(); }).observe(out, { childList: true, subtree: true });
-  } else {
-    // старый браузер без MutationObserver — считаем хотя бы по input/клику
-    document.getElementById('ave-form') && document.getElementById('ave-form').addEventListener('input', function () { setTimeout(emit, 0); });
-  }
-
-  // CTA «Получить точный расчёт» пересоздаётся движком при каждом рендере — делегируем клик на секцию,
-  // помечаем снимок как cta:true и мягко доскроллим к форме заявки (эхо в неё кладёт уже 08-lead).
-  sec.addEventListener('click', function (e) {
-    var cta = e.target && e.target.closest ? e.target.closest('#ave-cta') : null;
-    if (!cta) return;
-    emit({ cta: true });
-    var dest = document.getElementById('lead');
-    if (dest && dest.scrollIntoView) dest.scrollIntoView({ behavior: (window.AVZ && window.AVZ.reducedMotion) ? 'auto' : 'smooth' });
-  });
-
-  if (window.AVZ && typeof window.AVZ.reveal === 'function') {
-    window.AVZ.reveal(sec.querySelectorAll('.avz-reveal'));
-  } else if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // фундамента (00) на странице ещё нет — раскрываем сами через IntersectionObserver
-    var els = [].slice.call(sec.querySelectorAll('.avz-reveal'));
-    if ('IntersectionObserver' in window && els.length) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('avz-in'); io.unobserve(en.target); } });
-      }, { threshold: 0.2 });
-      els.forEach(function (el) { io.observe(el); });
-    } else {
-      els.forEach(function (el) { el.classList.add('avz-in'); });
-    }
-  } else {
-    sec.querySelectorAll('.avz-reveal').forEach(function (el) { el.classList.add('avz-in'); });
-  }
-})();
-</script>
-
-<div id="avz-internal-host"></div>
 <script>
 (() => {
   // config/pricing.config.js
@@ -661,42 +680,64 @@ body{margin:0;background:#f0f3f8}
       repeat: { label: "Одно объявление, размещаем в каждом регионе", note: "Контент создаётся один раз, но публикуется отдельно в каждом регионе — растёт число размещений." },
       distinct: { label: "Свои объявления под каждый регион", note: "Под каждый регион — своё объявление с отдельным контентом: нужно в категориях, где Авито не даёт дублировать один и тот же товар. Растёт и объём контента, и число размещений." }
     },
+    // Тарифы, которые клиент видит на aveasy.ru (сняты с живого блока 15.08.2026).
+    // anchor — публичная цена сайта: с ней сверяется расчёт (src/tariffFit.js).
+    // includes — дословные пункты оффера; осей под «А/В-тесты» и «выделенную команду»
+    // в движке нет, это текст тарифа, а не параметры расчёта.
     presets: {
       start: {
         label: "Старт",
-        sub: "До 20 объявлений · 1 регион · обычный автоответчик · базовая аналитика",
+        sub: "До 200 объявлений · тариф сайта от 35 000 ₽/мес",
+        anchor: { monthly: 35e3, label: "от 35 000 ₽/мес" },
+        includes: [
+          "Оформление профиля и витрин",
+          "Медиаплан платных услуг",
+          "CRM/Коллтрекинг — по запросу"
+        ],
         inputs: {
-          items: [{ type: "serial", listings: 20, contentStatus: "none" }],
+          items: [{ type: "serial", listings: 200, contentStatus: "none" }],
           accounts: 1,
           regions: 1,
           regionMode: "single",
           placementLevel: "R2",
           autoresponder: "basic",
-          analytics: "basic",
-          promotionMgmt: false
-        }
-      },
-      business: {
-        label: "Бизнес",
-        sub: "До 60 объявлений · 3 региона · обучаемый автоответчик · расширенная аналитика · продвижение",
-        inputs: {
-          items: [{ type: "serial", listings: 60, contentStatus: "none" }],
-          accounts: 1,
-          regions: 3,
-          regionMode: "repeat",
-          placementLevel: "R2",
-          autoresponder: "trainable",
           analytics: "extended",
           promotionMgmt: true
         }
       },
-      premium: {
-        label: "Премиум",
-        sub: "До 200 объявлений · 2 аккаунта · 5 регионов · сквозная аналитика + CRM · продвижение",
+      optimal: {
+        label: "Оптимальный",
+        sub: "До 1000 объявлений · тариф сайта от 50 000 ₽/мес",
+        anchor: { monthly: 5e4, label: "от 50 000 ₽/мес" },
+        includes: [
+          "Ведение и ротация, А/В-тесты",
+          "Работа с отзывами и витринами",
+          "Интеграции и отчётность"
+        ],
         inputs: {
-          items: [{ type: "serial", listings: 200, contentStatus: "none" }],
+          items: [{ type: "serial", listings: 500, contentStatus: "none" }],
+          accounts: 1,
+          regions: 1,
+          regionMode: "single",
+          placementLevel: "R2",
+          autoresponder: "basic",
+          analytics: "extended",
+          promotionMgmt: true
+        }
+      },
+      scale: {
+        label: "Масштаб",
+        sub: "1000+ объявлений, мульти-гео · цена по договорённости",
+        anchor: null,
+        includes: [
+          "Автозагрузка, шаблоны, SLA",
+          "Сквозная аналитика и BI-отчёты",
+          "Выделенная команда"
+        ],
+        inputs: {
+          items: [{ type: "serial", listings: 1500, contentStatus: "none" }],
           accounts: 2,
-          regions: 5,
+          regions: 3,
           regionMode: "repeat",
           placementLevel: "R3",
           autoresponder: "trainable",
@@ -965,299 +1006,6 @@ body{margin:0;background:#f0f3f8}
     };
   }
 
-  // src/presets.js
-  function computePresets(config2) {
-    return Object.entries(config2.presets).map(([key, preset]) => {
-      const result = calculate(preset.inputs, config2);
-      return {
-        key,
-        label: preset.label,
-        setup: result.price.setup,
-        monthly: result.price.monthly
-      };
-    });
-  }
-
-  // src/impacts.js
-  function computeImpacts(config2) {
-    const m = 1 + config2.targetMargin;
-    const r = config2.roundTo;
-    const rates = config2.rates;
-    const w = config2.work;
-    function price(cost) {
-      if (!r || r <= 1) return Math.round(cost * m);
-      return Math.round(cost * m / r) * r;
-    }
-    const contentPerListing = {};
-    for (const [type, costPerUnit] of Object.entries(config2.content.byType)) {
-      contentPerListing[type] = Math.round(costPerUnit * m);
-    }
-    const arBasicCost = w.autoresponder.basic.monthlyHours * rates[w.autoresponder.basic.role];
-    const arTrainMonthlyCost = w.autoresponder.trainable.monthlyHours * rates[w.autoresponder.trainable.role];
-    const arTrainSetupCost = w.autoresponder.trainable.setupHours * rates[w.autoresponder.trainable.role];
-    const autoresponder = {
-      basic: { monthly: price(arBasicCost) },
-      trainable: { monthly: price(arTrainMonthlyCost), setup: price(arTrainSetupCost) }
-    };
-    const anExtMonthlyCost = w.analytics.extended.monthlyHours * rates[w.analytics.extended.role];
-    const anCrmMonthlyCost = w.analytics.crossCrm.monthlyHours * rates[w.analytics.crossCrm.role];
-    const anCrmSetupCost = w.analytics.crossCrm.setupHours * rates[w.analytics.crossCrm.role];
-    const analytics = {
-      extended: { monthly: price(anExtMonthlyCost) },
-      crossCrm: { monthly: price(anCrmMonthlyCost), setup: price(anCrmSetupCost) }
-    };
-    const pl = config2.placement;
-    const placement = {
-      R1: { setup: pl.R1.setup },
-      R2: { setup: pl.R2.setup },
-      R3: { setup: pl.R3.setup },
-      R4: { setupPerListing: pl.R4.setupPerListing }
-    };
-    const promoMonthlyCost = w.promotionMgmt.monthlyHours * rates[w.promotionMgmt.role];
-    const promotionMgmt = { monthly: price(promoMonthlyCost) };
-    const perAccountMonthlyCost = w.management.monthlyHoursPerAccount * rates[w.management.role];
-    const perAccountMonthly = price(perAccountMonthlyCost);
-    return {
-      contentPerListing,
-      autoresponder,
-      analytics,
-      placement,
-      promotionMgmt,
-      perAccountMonthly
-    };
-  }
-
-  // web/widget.js
-  function formatRub(n) {
-    return new Intl.NumberFormat("ru-RU").format(n).replace(/[    ]/g, " ") + " ₽";
-  }
-  function buildRows(view) {
-    return view.breakdown.map((b) => {
-      const isSetupPhase = b.setup != null;
-      const isMonthlyPhase = b.monthly != null;
-      const atMin = isSetupPhase && view.setupIsMinimum || isMonthlyPhase && view.monthlyIsMinimum;
-      if (atMin) {
-        let suffix = "";
-        if (b.note) {
-          suffix = ` — ${b.note}`;
-        } else if (b.label === "Создание контента" && b.detail) {
-          const perUnit = b.detail.replace(/ × \d+$/, "");
-          suffix = ` — ${perUnit}`;
-        }
-        return { label: b.label + suffix, value: null, labelOnly: true };
-      }
-      let value;
-      if (b.note) value = b.note;
-      else if (isSetupPhase) value = formatRub(b.setup) + " разово";
-      else value = formatRub(b.monthly) + "/мес";
-      return { label: b.label, value, labelOnly: false };
-    });
-  }
-  function applyPreset(form, presetInputs, addItemRowFn) {
-    const el2 = form.elements;
-    if (el2["accounts"]) el2["accounts"].value = String(presetInputs.accounts);
-    if (el2["regions"]) el2["regions"].value = String(presetInputs.regions);
-    if (el2["placementLevel"]) el2["placementLevel"].value = presetInputs.placementLevel;
-    if (el2["regionMode"] && presetInputs.regionMode) el2["regionMode"].value = presetInputs.regionMode;
-    if (el2["autoresponder"]) el2["autoresponder"].value = presetInputs.autoresponder;
-    if (el2["analytics"]) el2["analytics"].value = presetInputs.analytics;
-    if (el2["promotionMgmt"]) el2["promotionMgmt"].checked = presetInputs.promotionMgmt;
-    const container = form.querySelector("#items-container");
-    if (container && addItemRowFn && presetInputs.items) {
-      container.innerHTML = "";
-      presetInputs.items.forEach((item) => addItemRowFn(item));
-    }
-  }
-  function readItems(form) {
-    const container = form.querySelector("#items-container");
-    if (!container) return [{ type: "serial", listings: 10, contentStatus: "none" }];
-    const rows = container.querySelectorAll(".item-row");
-    if (rows.length === 0) return [{ type: "serial", listings: 10, contentStatus: "none" }];
-    return Array.from(rows).map((row) => ({
-      type: row.querySelector('select[name="itemType"]').value || "serial",
-      listings: Number(row.querySelector('input[name="itemListings"]').value) || 1,
-      contentStatus: row.querySelector('select[name="itemContentStatus"]').value || "none"
-    }));
-  }
-  function readInputs(form) {
-    const num = (name) => Number(form.elements[name].value);
-    const val = (name) => form.elements[name].value;
-    const bool = (name) => form.elements[name] ? form.elements[name].checked : false;
-    const regionMode = form.elements["regionMode"] ? form.elements["regionMode"].value : config.defaultRegionMode || "repeat";
-    return {
-      items: readItems(form),
-      accounts: num("accounts"),
-      regions: num("regions"),
-      regionMode,
-      placementLevel: val("placementLevel"),
-      autoresponder: val("autoresponder"),
-      analytics: val("analytics"),
-      promotionMgmt: bool("promotionMgmt"),
-      noMonthly: bool("noMonthly")
-    };
-  }
-  function addItemRow(container, item, recalc) {
-    const row = document.createElement("div");
-    row.className = "item-row";
-    row.style.cssText = "display:flex;gap:.4rem;align-items:center;margin-bottom:.4rem;flex-wrap:wrap";
-    const typeOptions = Object.entries(config.content.typeLabels).map(([v, label]) => {
-      const ex = config.content.typeExamples && config.content.typeExamples[v];
-      const optLabel = ex ? `${label} (${ex.split(",").slice(0, 3).join(",")})` : label;
-      return `<option value="${v}"${item && item.type === v ? " selected" : ""}>${optLabel}</option>`;
-    }).join("");
-    row.innerHTML = `
-    <select name="itemType" style="flex:1;min-width:140px">${typeOptions}</select>
-    <input type="number" name="itemListings" value="${item ? item.listings : 10}" min="1" style="width:70px">
-    <select name="itemContentStatus" style="flex:1;min-width:110px">
-      <option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>Есть свой</option>
-      <option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>Частично</option>
-      <option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>Делаем мы</option>
-    </select>
-    <button type="button" class="item-remove" style="flex:0 0 auto;padding:0 .4rem;color:#c00;background:none;border:none;cursor:pointer;font-size:1rem" title="Удалить">✕</button>`;
-    row.querySelector(".item-remove").addEventListener("click", () => {
-      if (container.querySelectorAll(".item-row").length > 1) {
-        row.remove();
-        recalc();
-      }
-    });
-    row.querySelectorAll("select, input").forEach((el2) => el2.addEventListener("input", recalc));
-    container.appendChild(row);
-    return row;
-  }
-  function renderPresets(presetsContainer, form, recalc, cfg, addItemRowBound) {
-    const presets = computePresets(cfg);
-    presetsContainer.innerHTML = presets.map(
-      (p) => `<div class="ave-preset-card" data-key="${p.key}"><div class="ave-preset-label">${p.label}</div>` + (cfg.presets[p.key] && cfg.presets[p.key].sub ? `<div class="ave-preset-sub">${cfg.presets[p.key].sub}</div>` : "") + `<div class="ave-preset-price">${formatRub(p.setup)} разово</div><div class="ave-preset-monthly">${formatRub(p.monthly)}/мес</div><button type="button" class="ave-preset-btn" data-key="${p.key}">Настроить</button></div>`
-    ).join("");
-    presetsContainer.querySelectorAll(".ave-preset-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const key = btn.getAttribute("data-key");
-        const preset = cfg.presets[key];
-        if (preset) {
-          applyPreset(form, preset.inputs, addItemRowBound);
-          recalc();
-        }
-      });
-    });
-  }
-  function groupRows(view) {
-    const rows = buildRows(view);
-    const setupPackage = [];
-    const monthlyPackage = [];
-    const itemized = [];
-    for (const r of rows) {
-      if (!r.labelOnly) {
-        itemized.push(r);
-        continue;
-      }
-      const source = view.breakdown.find((b) => r.label === b.label || r.label.startsWith(`${b.label} — `));
-      if (source && source.setup != null) setupPackage.push(r.label);
-      else monthlyPackage.push(r.label);
-    }
-    return { setupPackage, monthlyPackage, itemized };
-  }
-  function render(view, out) {
-    const {
-      setupPackage: setupPackageItems,
-      monthlyPackage: monthlyPackageItems,
-      itemized: itemizedRows
-    } = groupRows(view);
-    const setupSublabel = view.setupIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
-    const monthlySublabel = view.monthlyIsMinimum ? `<div class="ave-total-sub">базовый пакет</div>` : "";
-    let breakdownHtml = "";
-    if (setupPackageItems.length > 0) {
-      breakdownHtml += `<div class="ave-pkg-header">Входит в пакет (настройка):</div>`;
-      breakdownHtml += setupPackageItems.map((l) => `<div class="ave-pkg-item">✓ ${l}</div>`).join("");
-    }
-    if (monthlyPackageItems.length > 0) {
-      breakdownHtml += `<div class="ave-pkg-header">Входит в пакет (ведение):</div>`;
-      breakdownHtml += monthlyPackageItems.map((l) => `<div class="ave-pkg-item">✓ ${l}</div>`).join("");
-    }
-    breakdownHtml += itemizedRows.map(
-      (r) => `<div class="row"><span>${r.label}</span><b>${r.value}</b></div>`
-    ).join("");
-    out.innerHTML = `
-    <div class="totals">
-      <div class="total"><span>Настройка</span><b>${formatRub(view.setup)}</b>${setupSublabel}</div>
-      <div class="total"><span>Ведение</span><b>${formatRub(view.monthly)}/мес</b>${monthlySublabel}</div>
-    </div>
-    <div class="breakdown">${breakdownHtml}</div>
-    ${view.isPreliminary ? `<div class="note ave-preliminary">${view.preliminaryNote}</div>` : ""}
-    <div class="note">${view.platformNote}</div>
-    <button type="button" class="cta" id="ave-cta">Получить точный расчёт</button>`;
-  }
-  function buildPlacementHint(cfg, f) {
-    const pl = cfg.placement;
-    const parts = [];
-    parts.push(`R1 — ${pl.R1.label}: Бесплатно (готовый фид)`);
-    parts.push(`R2 — ${pl.R2.label}: Настройка ${f(pl.R2.setup)}`);
-    parts.push(`R3 — ${pl.R3.label}: Настройка ${f(pl.R3.setup)}`);
-    parts.push(`R4 — ${pl.R4.label}: За объявление ${pl.R4.setupPerListing} ₽`);
-    return parts.join(" · ");
-  }
-  function buildHints(cfg) {
-    const imp = computeImpacts(cfg);
-    const f = formatRub;
-    return {
-      itemType: `Каталожный — ${config.content.typeExamples.catalog} → ${f(imp.contentPerListing.catalog)}/объявл · Серийный — ${config.content.typeExamples.serial} → ${f(imp.contentPerListing.serial)}/объявл · Уникальный — ${config.content.typeExamples.unique} → ${f(imp.contentPerListing.unique)}/объявл`,
-      itemContentStatus: `Есть свой ×0 · Частично ×½ · Делаем мы — полная ставка`,
-      accounts: `Каждый аккаунт +${f(imp.perAccountMonthly)}/мес к ведению`,
-      regions: `Влияет на цену по выбранному режиму размещения по регионам (см. ниже)`,
-      placementLevel: buildPlacementHint(cfg, f),
-      autoresponder: `Обычный +${f(imp.autoresponder.basic.monthly)}/мес · Обучаемый +${f(imp.autoresponder.trainable.monthly)}/мес +${f(imp.autoresponder.trainable.setup)} настройка`,
-      analytics: `Расширенная +${f(imp.analytics.extended.monthly)}/мес · Сквозная+CRM +${f(imp.analytics.crossCrm.monthly)}/мес +${f(imp.analytics.crossCrm.setup)} настройка`,
-      promotionMgmt: `Ведём продвижение Авито в рамках вашего бюджета — +${f(imp.promotionMgmt.monthly)}/мес. Сам бюджет Авито — отдельно.`
-    };
-  }
-  function mount(form, out, presetsContainer) {
-    const container = document.createElement("div");
-    container.id = "items-container";
-    const addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.textContent = "+ добавить тип товара";
-    addBtn.style.cssText = "font-size:.8rem;margin-bottom:.5rem;cursor:pointer";
-    const itemsSection = document.createElement("div");
-    itemsSection.innerHTML = '<label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.3rem">Товар</label>';
-    const hints = buildHints(config);
-    const itemHint = document.createElement("small");
-    itemHint.className = "param-hint";
-    itemHint.textContent = hints.itemType;
-    itemsSection.appendChild(container);
-    itemsSection.appendChild(addBtn);
-    itemsSection.appendChild(itemHint);
-    function setHint(name, text2) {
-      const el2 = form.elements[name];
-      if (!el2) return;
-      let hint = el2.closest("label") ? el2.closest("label").nextElementSibling : null;
-      if (hint && hint.classList.contains("param-hint")) {
-        hint.textContent = text2;
-      }
-    }
-    form.insertBefore(itemsSection, form.firstChild);
-    const recalc = () => {
-      const inputs = readInputs(form);
-      render(toClientView(calculate(inputs, config), config), out);
-      const noteEl = document.getElementById("ave-regionmode-note");
-      if (noteEl) {
-        const rm = config.regionModes && config.regionModes[inputs.regionMode];
-        noteEl.textContent = rm ? rm.note : "";
-      }
-    };
-    const addItemRowBound = (item) => addItemRow(container, item, recalc);
-    addItemRowBound({ type: "serial", listings: 10, contentStatus: "none" });
-    addBtn.addEventListener("click", () => {
-      addItemRowBound(null);
-      recalc();
-    });
-    const rerenderPresets = () => {
-      if (presetsContainer) renderPresets(presetsContainer, form, recalc, config, addItemRowBound);
-    };
-    rerenderPresets();
-    form.addEventListener("input", recalc);
-    recalc();
-    return { recalc, rerenderPresets };
-  }
-
   // src/reports.js
   var NUM = new Intl.NumberFormat("ru-RU");
   function fmtNum(n) {
@@ -1473,6 +1221,301 @@ body{margin:0;background:#f0f3f8}
     };
   }
 
+  // src/tariffFit.js
+  function buildTariffFit(result, tariff, config2) {
+    if (!tariff || !tariff.anchor) return null;
+    const anchorMonthly = tariff.anchor.monthly;
+    const calcMonthly = result.price.monthly;
+    const costMonthly = result.cost.monthly;
+    const markupAtAnchor = costMonthly === 0 ? null : Math.round((anchorMonthly - costMonthly) / costMonthly * 100);
+    const marginAtAnchor = anchorMonthly === 0 ? 0 : Math.round((anchorMonthly - costMonthly) / anchorMonthly * 100);
+    const delta = calcMonthly - anchorMonthly;
+    const within = delta <= 0;
+    const note = within ? `Расчёт укладывается в тариф: ${fmtRub(calcMonthly)} при обещанных ${fmtRub(anchorMonthly)}.` : `Расчёт выше тарифа на ${fmtRub(delta)} — цена индивидуальная.`;
+    return {
+      label: tariff.label,
+      anchorMonthly,
+      anchorLabel: tariff.anchor.label,
+      calcMonthly,
+      delta,
+      within,
+      costMonthly,
+      markupAtAnchor,
+      marginAtAnchor,
+      belowFloor: markupAtAnchor !== null && markupAtAnchor < config2.marginFloor * 100,
+      note
+    };
+  }
+
+  // src/includes.js
+  function collect(services, phase, items, isPackage) {
+    for (const entry of items) {
+      services.push({
+        phase,
+        label: entry.label,
+        detail: entry.detail || null,
+        amountText: isPackage ? null : entry.amountText
+      });
+    }
+  }
+  function toText(title, services, tariffPoints) {
+    const lines = [title];
+    const block = (heading, list) => {
+      if (!list.length) return;
+      lines.push("", heading);
+      for (const s of list) {
+        lines.push(`• ${s.label}${s.amountText ? ` — ${s.amountText}` : ""}`);
+      }
+    };
+    block("Разовая настройка:", services.filter((s) => s.phase === "setup"));
+    block("Ежемесячно:", services.filter((s) => s.phase === "monthly"));
+    if (tariffPoints.length) {
+      lines.push("", "По тарифу также:");
+      for (const point of tariffPoints) lines.push(`• ${point}`);
+    }
+    return lines.join("\n");
+  }
+  function buildIncludes(result, config2, tariff) {
+    const quote = buildQuoteReport(result, config2);
+    const services = [];
+    collect(services, "setup", quote.setupItems, false);
+    collect(services, "setup", quote.setupPackage, true);
+    collect(services, "monthly", quote.monthlyItems, false);
+    collect(services, "monthly", quote.monthlyPackage, true);
+    const tariffPoints = tariff && tariff.includes ? [...tariff.includes] : [];
+    const title = tariff ? `Что входит — тариф «${tariff.label}»` : "Что входит";
+    const totals2 = {
+      setup: { amount: quote.setup, isMinimum: quote.setupIsMinimum },
+      monthly: { amount: quote.monthly, isMinimum: quote.monthlyIsMinimum }
+    };
+    return { title, services, tariffPoints, totals: totals2, text: toText(title, services, tariffPoints) };
+  }
+
+  // web/widget.js
+  function applyPreset(form, presetInputs, addItemRowFn) {
+    const el = form.elements;
+    if (el["accounts"]) el["accounts"].value = String(presetInputs.accounts);
+    if (el["regions"]) el["regions"].value = String(presetInputs.regions);
+    if (el["placementLevel"]) el["placementLevel"].value = presetInputs.placementLevel;
+    if (el["regionMode"] && presetInputs.regionMode) el["regionMode"].value = presetInputs.regionMode;
+    if (el["autoresponder"]) el["autoresponder"].value = presetInputs.autoresponder;
+    if (el["analytics"]) el["analytics"].value = presetInputs.analytics;
+    if (el["promotionMgmt"]) el["promotionMgmt"].checked = presetInputs.promotionMgmt;
+    const container = form.querySelector("#items-container");
+    if (container && addItemRowFn && presetInputs.items) {
+      container.innerHTML = "";
+      presetInputs.items.forEach((item) => addItemRowFn(item));
+    }
+  }
+  function readItems(form) {
+    const container = form.querySelector("#items-container");
+    if (!container) return [{ type: "serial", listings: 10, contentStatus: "none" }];
+    const rows = container.querySelectorAll(".item-row");
+    if (rows.length === 0) return [{ type: "serial", listings: 10, contentStatus: "none" }];
+    return Array.from(rows).map((row) => ({
+      type: row.querySelector('select[name="itemType"]').value || "serial",
+      listings: Number(row.querySelector('input[name="itemListings"]').value) || 1,
+      contentStatus: row.querySelector('select[name="itemContentStatus"]').value || "none"
+    }));
+  }
+  function readInputs(form) {
+    const num = (name) => Number(form.elements[name].value);
+    const val = (name) => form.elements[name].value;
+    const bool = (name) => form.elements[name] ? form.elements[name].checked : false;
+    const regionMode = form.elements["regionMode"] ? form.elements["regionMode"].value : config.defaultRegionMode || "repeat";
+    return {
+      items: readItems(form),
+      accounts: num("accounts"),
+      regions: num("regions"),
+      regionMode,
+      placementLevel: val("placementLevel"),
+      autoresponder: val("autoresponder"),
+      analytics: val("analytics"),
+      promotionMgmt: bool("promotionMgmt"),
+      noMonthly: bool("noMonthly")
+    };
+  }
+
+  // web/internal-page/controls.js
+  var SCRATCH = {
+    items: [{ type: "serial", listings: 50, contentStatus: "none" }],
+    accounts: 1,
+    regions: 1,
+    regionMode: "single",
+    placementLevel: "R2",
+    autoresponder: "basic",
+    analytics: "basic",
+    promotionMgmt: false
+  };
+  function mountControls({ root, config: config2, onChange }) {
+    const form = root.querySelector("#ave-form");
+    const container = root.querySelector("#items-container");
+    const addBtn = root.querySelector("#avz-add-item");
+    const tariffsBox = root.querySelector("#avz-tariffs");
+    let activeKey = null;
+    function addItemRow(item) {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      const typeOptions = Object.entries(config2.content.typeLabels).map(([value, label]) => `<option value="${value}"${item && item.type === value ? " selected" : ""}>${label}</option>`).join("");
+      row.innerHTML = `
+      <input type="number" name="itemListings" class="avz-qty" min="1" step="10" value="${item ? item.listings : 50}">
+      <select name="itemType" class="avz-item-type">${typeOptions}</select>
+      <select name="itemContentStatus" class="avz-item-status">
+        <option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>контент свой</option>
+        <option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>контент частично</option>
+        <option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>контент делаем мы</option>
+      </select>
+      <button type="button" class="avz-item-remove" title="Убрать">✕</button>`;
+      row.querySelector(".avz-item-remove").addEventListener("click", () => {
+        if (container.querySelectorAll(".item-row").length > 1) {
+          row.remove();
+          updateRemoveButtons();
+          markManual();
+          onChange();
+        }
+      });
+      container.appendChild(row);
+      updateRemoveButtons();
+      return row;
+    }
+    function updateRemoveButtons() {
+      const rows = container.querySelectorAll(".item-row");
+      rows.forEach((r) => {
+        r.querySelector(".avz-item-remove").hidden = rows.length < 2;
+      });
+    }
+    function markManual() {
+      if (activeKey === null) return;
+      activeKey = null;
+      renderTariffs();
+    }
+    function applyTariff(key) {
+      const inputs = key ? config2.presets[key].inputs : SCRATCH;
+      applyPreset(form, inputs, addItemRow);
+      form.elements["noMonthly"].checked = false;
+      activeKey = key;
+      renderTariffs();
+      onChange();
+    }
+    function renderTariffs() {
+      const cards = Object.entries(config2.presets).map(([key, tariff]) => `
+      <button type="button" class="avz-tariff${activeKey === key ? " avz-tariff-on" : ""}" data-tariff="${key}">
+        <span class="avz-tariff-name">${tariff.label}</span>
+        <span class="avz-tariff-price">${tariff.anchor ? tariff.anchor.label : "по договорённости"}</span>
+      </button>`).join("");
+      tariffsBox.innerHTML = cards + `
+      <button type="button" class="avz-tariff avz-tariff-scratch${activeKey === null ? " avz-tariff-on" : ""}" data-tariff="">
+        <span class="avz-tariff-name">С нуля</span>
+        <span class="avz-tariff-price">под задачу клиента</span>
+      </button>`;
+    }
+    tariffsBox.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-tariff]");
+      if (!btn) return;
+      applyTariff(btn.getAttribute("data-tariff") || null);
+    });
+    addBtn.addEventListener("click", () => {
+      addItemRow(null);
+      markManual();
+      onChange();
+    });
+    form.addEventListener("input", () => {
+      markManual();
+      onChange();
+    });
+    form.addEventListener("change", () => {
+      markManual();
+      onChange();
+    });
+    renderTariffs();
+    return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
+  }
+
+  // web/internal-page/summary.js
+  var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function totals(report) {
+    const oneOff = report.monthly.price === 0;
+    const card = (label, value, sub, strong) => `
+    <div class="avz-card${strong ? " avz-card-strong" : ""}">
+      <div class="avz-card-label">${esc(label)}</div>
+      <div class="avz-card-value">${esc(value)}</div>
+      <div class="avz-card-sub">${esc(sub)}</div>
+    </div>`;
+    return `<div class="avz-cards">
+    ${card("Настройка, разово", fmtRub(report.setup.price), totalsSubtitle(report.setup))}
+    ${oneOff ? card("Ведение, в месяц", "—", "разовый проект — без ежемесячного ведения") : card("Ведение, в месяц", fmtRub(report.monthly.price), totalsSubtitle(report.monthly))}
+    ${card("Первый платёж", fmtRub(report.firstPayment), oneOff ? "только настройка" : "настройка + первый месяц", true)}
+  </div>`;
+  }
+  function tariffBox(fit, tariffLabel) {
+    if (!fit) {
+      return tariffLabel ? `<div class="avz-fit avz-fit-none">Тариф «${esc(tariffLabel)}» — цена по договорённости, публичного якоря нет: считаем от параметров.</div>` : "";
+    }
+    const profit = fit.markupAtAnchor === null ? "вся цена — прибыль" : `наценка ${fmtNum(fit.markupAtAnchor)}% · маржа ${fmtNum(fit.marginAtAnchor)}%`;
+    return `
+    <div class="avz-fit ${fit.within ? "avz-fit-ok" : "avz-fit-over"}">
+      <div class="avz-fit-head">Тариф «${esc(fit.label)}» — ${esc(fit.anchorLabel)}</div>
+      <div class="avz-fit-note">${esc(fit.note)}</div>
+      <div class="avz-fit-margin${fit.belowFloor ? " avz-fit-low" : ""}">
+        При цене тарифа ${esc(fmtRub(fit.anchorMonthly))}: ${esc(profit)}${fit.belowFloor ? " — ниже порога" : ""}
+      </div>
+    </div>`;
+  }
+  function includesBox(includes) {
+    const list = (phase) => includes.services.filter((s) => s.phase === phase).map((s) => `<li><span>${esc(s.label)}</span>${s.amountText ? `<b>${esc(s.amountText)}</b>` : ""}</li>`).join("");
+    const setup = list("setup");
+    const monthly = list("monthly");
+    const points = includes.tariffPoints.map((p) => `<li><span>${esc(p)}</span></li>`).join("");
+    const sub = (title, total) => `<div class="avz-inc-sub">${title}
+    <b>${esc(fmtRub(total.amount))}${total.isMinimum ? " — базовый пакет" : ""}</b></div>`;
+    return `
+    <div class="avz-inc">
+      <div class="avz-inc-head">
+        <span>${esc(includes.title)}</span>
+        <button type="button" class="avz-inc-copy" data-act="copy-includes">скопировать текстом</button>
+      </div>
+      ${setup ? sub("Разовая настройка", includes.totals.setup) + `<ul class="avz-inc-list">${setup}</ul>` : ""}
+      ${monthly ? sub("Ежемесячно", includes.totals.monthly) + `<ul class="avz-inc-list">${monthly}</ul>` : ""}
+      ${points ? `<div class="avz-inc-sub">По тарифу также</div><ul class="avz-inc-list avz-inc-points">${points}</ul>` : ""}
+    </div>`;
+  }
+  function mountSummary({ root }) {
+    const box = root.querySelector("#avz-summary");
+    function render({ report, fit, includes, tariffLabel }) {
+      box.innerHTML = totals(report) + tariffBox(fit, tariffLabel) + (report.flags.length ? `<div class="avz-warn">${report.flags.map((f) => `<div>• ${esc(f)}</div>`).join("")}</div>` : "") + includesBox(includes);
+    }
+    return { render };
+  }
+
+  // web/internal-page/rows.js
+  var esc2 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function mountRows({ root }) {
+    const box = root.querySelector("#avz-rows");
+    function group(report, phase, title) {
+      const rows = report.rows.filter((r) => r.phase === phase);
+      if (!rows.length) return "";
+      return `<tr class="avz-row-group"><td colspan="4">${title}</td></tr>` + rows.map((r) => `
+      <tr>
+        <td><span class="avz-row-label">${esc2(r.label)}</span>${r.detail ? `<span class="avz-row-detail">${esc2(r.detail)}</span>` : ""}</td>
+        <td class="avz-num">${esc2(fmtRub(r.cost))}</td>
+        <td class="avz-num avz-num-price">${esc2(fmtRub(r.price))}</td>
+        <td class="avz-num ${r.markupPct !== null && r.markupPct < 50 ? "avz-num-low" : ""}">${r.markupPct === null ? "—" : esc2(fmtNum(r.markupPct)) + "%"}</td>
+      </tr>`).join("");
+    }
+    function render(report) {
+      box.innerHTML = `
+      <div class="avz-params">${report.params.map((p) => `<div class="avz-param"><span>${esc2(p.label)}</span><b>${esc2(p.value)}</b></div>`).join("")}</div>
+      <table class="avz-table">
+        <thead><tr><th>Работа</th><th class="avz-num">Себестоимость</th><th class="avz-num">Цена клиенту</th><th class="avz-num">Наценка</th></tr></thead>
+        <tbody>
+          ${group(report, "setup", "Разовая настройка")}
+          ${group(report, "monthly", "Ежемесячное ведение")}
+        </tbody>
+      </table>`;
+    }
+    return { render };
+  }
+
   // src/configOverrides.js
   function pathKey(path) {
     return path.join(".");
@@ -1495,6 +1538,77 @@ body{margin:0;background:#f0f3f8}
       writeAtPath(liveConfig, spec.path, value);
     }
     return liveConfig;
+  }
+
+  // web/internal-page/modelPanel.js
+  var esc3 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  var toField = (spec) => spec.kind === "percent" ? Math.round(spec.raw * 1e3) / 10 : spec.raw;
+  var fromField = (spec, value) => spec.kind === "percent" ? value / 100 : value;
+  var fieldStep = (spec) => spec.kind === "percent" ? 1 : spec.step;
+  var fieldSuffix = (spec) => ({ percent: "%", rate: "₽/ч", perListing: "₽/объявл", hours: "ч", money: "₽" })[spec.kind] || "";
+  function mountModelPanel({ root, config: config2, baseConfig: baseConfig2, onApply }) {
+    const panel = root.querySelector("#avz-model-panel");
+    const toggleBtn = root.querySelector("#avz-model-toggle");
+    const dot = toggleBtn.querySelector(".avz-model-dot");
+    const overrides = {};
+    let specs = [];
+    panel.innerHTML = `
+    <div class="avz-model-head">
+      <b>Параметры модели</b>
+      <button type="button" class="avz-model-close" data-act="close">✕</button>
+    </div>
+    <p class="avz-model-note">Правки живут только в этой вкладке: файл прайса не меняется, обновление страницы всё вернёт.</p>
+    <button type="button" class="avz-model-reset" data-act="reset" hidden>Вернуть значения из прайса</button>
+    <div class="avz-model-fields" data-role="fields"></div>`;
+    const fieldsBox = panel.querySelector('[data-role="fields"]');
+    const resetBtn = panel.querySelector('[data-act="reset"]');
+    function render(report) {
+      specs = report.model;
+      fieldsBox.innerHTML = report.model.map((m) => `
+      <label class="avz-mfield${m.changed ? " avz-mfield-changed" : ""}">
+        <span class="avz-mfield-label">${esc3(m.label)}</span>
+        <span class="avz-mfield-input">
+          <input type="number" step="${fieldStep(m)}" value="${toField(m)}" data-path="${esc3(pathKey(m.path))}">
+          <i>${esc3(fieldSuffix(m))}</i>
+        </span>
+        ${m.changed ? `<span class="avz-mfield-base">было ${esc3(m.baseValue)}</span>` : ""}
+      </label>`).join("");
+      const changed = report.model.some((m) => m.changed);
+      resetBtn.hidden = !changed;
+      dot.hidden = !changed;
+    }
+    fieldsBox.addEventListener("change", (e) => {
+      const input = e.target.closest("input[data-path]");
+      if (!input) return;
+      const key = input.getAttribute("data-path");
+      const spec = specs.find((m) => pathKey(m.path) === key);
+      if (!spec) return;
+      const raw = input.value.trim();
+      if (raw === "" || Number.isNaN(Number(raw))) {
+        delete overrides[key];
+      } else {
+        const value = fromField(spec, Number(raw));
+        if (value === spec.baseRaw) delete overrides[key];
+        else overrides[key] = value;
+      }
+      applyOverridesInPlace(config2, baseConfig2, overrides);
+      onApply();
+    });
+    panel.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      if (btn.getAttribute("data-act") === "close") {
+        panel.hidden = true;
+        return;
+      }
+      for (const key of Object.keys(overrides)) delete overrides[key];
+      applyOverridesInPlace(config2, baseConfig2, overrides);
+      onApply();
+    });
+    toggleBtn.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+    });
+    return { render, isChanged: () => Object.keys(overrides).length > 0 };
   }
 
   // web/internal-page/png.js
@@ -1625,11 +1739,11 @@ body{margin:0;background:#f0f3f8}
     h += rule(ctx, x, y + h, width, draw);
     h += 10;
     for (const group of groups) {
-      const groupRows2 = rows.filter((r) => r.phase === group.phase);
-      if (!groupRows2.length) continue;
+      const groupRows = rows.filter((r) => r.phase === group.phase);
+      if (!groupRows.length) continue;
       h += text(ctx, group.title, x, y + h, { weight: 700, size: 14, color: T.blue, width }, draw);
       h += 8;
-      for (const row of groupRows2) {
+      for (const row of groupRows) {
         let rowH = 0;
         columns.forEach((c, i) => {
           const raw = row[c.key];
@@ -1761,7 +1875,7 @@ body{margin:0;background:#f0f3f8}
     return canvas;
   }
   var spacer = (px) => () => px;
-  function renderInternalPng(report, { stamp = stampNow() } = {}) {
+  function renderInternalPng(report, { stamp = stampNow(), tariffLabel = null } = {}) {
     const markupColor = (row) => row.markupPct !== null && row.markupPct < 50 ? T.bad : T.ink;
     const rows = report.rows.map((r) => ({
       phase: r.phase,
@@ -1777,7 +1891,7 @@ body{margin:0;background:#f0f3f8}
     const blocks = [
       (ctx, x, y, w, draw) => header(ctx, {
         title: "Aveasy — внутренний расчёт",
-        subtitle: "Себестоимость, цена клиенту и наценка по каждой строке",
+        subtitle: tariffLabel ? `Тариф «${tariffLabel}» · себестоимость, цена клиенту и наценка по каждой строке` : "Себестоимость, цена клиенту и наценка по каждой строке",
         stamp
       }, x, y, w, draw),
       (ctx, x, y, w, draw) => sectionTitle(ctx, "Параметры расчёта", x, y, w, draw),
@@ -1926,201 +2040,78 @@ body{margin:0;background:#f0f3f8}
     return `${prefix}-${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}.png`;
   }
 
-  // web/internal-page/panel.js
-  var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  function el(tag, className, html) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (html != null) node.innerHTML = html;
-    return node;
-  }
-  function toField(spec) {
-    return spec.kind === "percent" ? Math.round(spec.raw * 1e3) / 10 : spec.raw;
-  }
-  function fromField(spec, value) {
-    return spec.kind === "percent" ? value / 100 : value;
-  }
-  function fieldStep(spec) {
-    return spec.kind === "percent" ? 1 : spec.step;
-  }
-  function fieldSuffix(spec) {
-    return { percent: "%", rate: "₽/ч", perListing: "₽/объявл", hours: "ч", money: "₽" }[spec.kind] || "";
-  }
-  function renderRows(report) {
-    const group = (phase, title) => {
-      const rows = report.rows.filter((r) => r.phase === phase);
-      if (!rows.length) return "";
-      return `<tr class="avz-int-group"><td colspan="5">${title}</td></tr>` + rows.map((r) => `
-      <tr>
-        <td>
-          <span class="avz-int-label">${esc(r.label)}</span>
-          ${r.detail ? `<span class="avz-int-detail">${esc(r.detail)}</span>` : ""}
-        </td>
-        <td class="avz-int-num">${esc(fmtRub(r.cost))}</td>
-        <td class="avz-int-num avz-int-price">${esc(fmtRub(r.price))}</td>
-        <td class="avz-int-num ${r.markupPct !== null && r.markupPct < 50 ? "avz-int-low" : ""}">${r.markupPct === null ? "—" : esc(fmtNum(r.markupPct)) + "%"}</td>
-      </tr>`).join("");
-    };
-    return `
-    <table class="avz-int-table">
-      <thead>
-        <tr><th>Работа</th><th class="avz-int-num">Себестоимость</th><th class="avz-int-num">Цена клиенту</th><th class="avz-int-num">Наценка</th></tr>
-      </thead>
-      <tbody>
-        ${group("setup", "Разовая настройка")}
-        ${group("monthly", "Ежемесячное ведение")}
-      </tbody>
-    </table>`;
-  }
-  function renderTotals(report) {
-    const card = (label, value, sub, strong) => `
-    <div class="avz-int-card${strong ? " avz-int-card-strong" : ""}">
-      <div class="avz-int-card-label">${esc(label)}</div>
-      <div class="avz-int-card-value">${esc(value)}</div>
-      <div class="avz-int-card-sub">${esc(sub)}</div>
-    </div>`;
-    const oneOff = report.monthly.price === 0;
-    return `
-    <div class="avz-int-cards">
-      ${card("Настройка, разово", fmtRub(report.setup.price), totalsSubtitle(report.setup))}
-      ${oneOff ? card("Ведение, в месяц", "—", "разовый проект — без ежемесячного ведения") : card("Ведение, в месяц", fmtRub(report.monthly.price), totalsSubtitle(report.monthly))}
-      ${card("Первый платёж", fmtRub(report.firstPayment), oneOff ? "только настройка" : "настройка + первый месяц", true)}
-    </div>`;
-  }
-  function renderFlags(report) {
-    if (!report.flags.length) return "";
-    return `<div class="avz-int-warn">${report.flags.map((f) => `<div>• ${esc(f)}</div>`).join("")}</div>`;
-  }
-  function renderParams(report) {
-    return `<div class="avz-int-params">${report.params.map((p) => `
-    <div class="avz-int-param"><span>${esc(p.label)}</span><b>${esc(p.value)}</b></div>`).join("")}</div>`;
-  }
-  function mountInternalPanel({ form, host, config: config2, baseConfig: baseConfig2, widget, watch }) {
-    const overrides = {};
-    const root = el("section", "avz-int");
-    root.innerHTML = `
-    <div class="avz-int-wrap">
-      <div class="avz-int-head">
-        <div>
-          <div class="avz-int-eyebrow">внутренний расчёт</div>
-          <h2 class="avz-int-title">Из чего складывается цена</h2>
-        </div>
-        <div class="avz-int-actions">
-          <button type="button" class="avz-int-btn avz-int-btn-main" data-act="png-internal">Скачать внутренний расчёт</button>
-          <button type="button" class="avz-int-btn" data-act="copy-internal">Копировать картинку</button>
-          <button type="button" class="avz-int-btn avz-int-btn-client" data-act="png-quote">Выгрузить для клиента</button>
-          <button type="button" class="avz-int-btn" data-act="copy-quote">Копировать КП</button>
-          <button type="button" class="avz-int-btn" data-act="print">Печать / PDF</button>
-        </div>
-      </div>
-      <div class="avz-int-status" data-role="status" hidden></div>
-
-      <div class="avz-int-block" data-role="totals"></div>
-      <div class="avz-int-block" data-role="flags"></div>
-
-      <div class="avz-int-sec">Параметры расчёта</div>
-      <div class="avz-int-block" data-role="params"></div>
-
-      <div class="avz-int-sec">Разбор по строкам</div>
-      <div class="avz-int-block avz-int-scroll" data-role="rows"></div>
-
-      <div class="avz-int-sec avz-int-sec-model">
-        Параметры модели
-        <button type="button" class="avz-int-reset" data-act="reset" hidden>Вернуть значения из прайса</button>
-      </div>
-      <p class="avz-int-note">Значения можно менять прямо здесь — расчёт и карточки пакетов пересчитаются.
-        Правки живут только в этой вкладке: файл прайса не меняется, обновление страницы всё вернёт.</p>
-      <div class="avz-int-model" data-role="model"></div>
-    </div>`;
-    host.appendChild(root);
-    const totalsBox = root.querySelector('[data-role="totals"]');
-    const flagsBox = root.querySelector('[data-role="flags"]');
-    const paramsBox = root.querySelector('[data-role="params"]');
-    const rowsBox = root.querySelector('[data-role="rows"]');
-    const modelBox = root.querySelector('[data-role="model"]');
-    const statusBox = root.querySelector('[data-role="status"]');
-    const resetBtn = root.querySelector('[data-act="reset"]');
-    let lastReport = null;
-    let lastQuote = null;
+  // web/internal-page/app.js
+  function mountApp({ root, config: config2, baseConfig: baseConfig2 }) {
+    const form = root.querySelector("#ave-form");
+    if (!form) return null;
+    function currentResult() {
+      return calculate(readInputs(form), config2);
+    }
+    const controls = mountControls({ root, config: config2, onChange: () => refresh() });
+    const summary = mountSummary({ root });
+    const rows = mountRows({ root });
+    const modelPanel = mountModelPanel({ root, config: config2, baseConfig: baseConfig2, onApply: () => refresh() });
+    let last = { report: null, quote: null, includes: null, fit: null };
+    function currentTariff() {
+      const key = controls.activeTariffKey();
+      return key ? config2.presets[key] : null;
+    }
+    function refresh() {
+      const result = currentResult();
+      const tariff = currentTariff();
+      last = {
+        report: buildInternalReport(result, config2, { baseConfig: baseConfig2 }),
+        quote: buildQuoteReport(result, config2),
+        includes: buildIncludes(result, config2, tariff),
+        fit: buildTariffFit(result, tariff, config2)
+      };
+      summary.render({
+        report: last.report,
+        fit: last.fit,
+        includes: last.includes,
+        tariffLabel: tariff ? tariff.label : null
+      });
+      rows.render(last.report);
+      modelPanel.render(last.report);
+    }
+    const statusBox = root.querySelector("#avz-status");
     function status(message, kind = "ok") {
       statusBox.textContent = message;
-      statusBox.className = `avz-int-status avz-int-status-${kind}`;
+      statusBox.className = `avz-status avz-status-${kind}`;
       statusBox.hidden = false;
       clearTimeout(status.timer);
       status.timer = setTimeout(() => {
         statusBox.hidden = true;
       }, 4e3);
     }
-    function currentResult() {
-      return calculate(readInputs(form), config2);
+    function internalPng() {
+      const tariff = currentTariff();
+      return renderInternalPng(last.report, { tariffLabel: tariff ? tariff.label : null });
     }
-    function renderModel(report) {
-      modelBox.innerHTML = report.model.map((m) => {
-        const key = pathKey(m.path);
-        return `
-      <label class="avz-int-field${m.changed ? " avz-int-field-changed" : ""}">
-        <span class="avz-int-field-label">${esc(m.label)}</span>
-        <span class="avz-int-field-input">
-          <input type="number" step="${fieldStep(m)}" value="${toField(m)}" data-path="${esc(key)}" data-kind="${m.kind}">
-          <i>${esc(fieldSuffix(m))}</i>
-        </span>
-        ${m.changed ? `<span class="avz-int-field-base">было ${esc(m.baseValue)}</span>` : ""}
-      </label>`;
-      }).join("");
-      resetBtn.hidden = !report.model.some((m) => m.changed);
-    }
-    function refresh() {
-      const result = currentResult();
-      lastReport = buildInternalReport(result, config2, { baseConfig: baseConfig2 });
-      lastQuote = buildQuoteReport(result, config2);
-      totalsBox.innerHTML = renderTotals(lastReport);
-      flagsBox.innerHTML = renderFlags(lastReport);
-      paramsBox.innerHTML = renderParams(lastReport);
-      rowsBox.innerHTML = renderRows(lastReport);
-      renderModel(lastReport);
-    }
-    function applyOverrides() {
-      applyOverridesInPlace(config2, baseConfig2, overrides);
-      widget.recalc();
-      widget.rerenderPresets();
-      refresh();
-    }
-    modelBox.addEventListener("change", (e) => {
-      const input = e.target.closest("input[data-path]");
-      if (!input) return;
-      const key = input.getAttribute("data-path");
-      const spec = lastReport.model.find((m) => pathKey(m.path) === key);
-      if (!spec) return;
-      const raw = input.value.trim();
-      if (raw === "" || Number.isNaN(Number(raw))) {
-        delete overrides[key];
-      } else {
-        const value = fromField(spec, Number(raw));
-        if (value === spec.baseRaw) delete overrides[key];
-        else overrides[key] = value;
-      }
-      applyOverrides();
-    });
-    resetBtn.addEventListener("click", () => {
-      for (const key of Object.keys(overrides)) delete overrides[key];
-      applyOverrides();
-      status("Значения вернулись к прайсу");
-    });
     root.addEventListener("click", async (e) => {
+      if (!e.target.closest('[data-act="copy-includes"]')) return;
+      try {
+        await navigator.clipboard.writeText(last.includes.text);
+        status("Состав скопирован — вставьте в чат (Ctrl+V)");
+      } catch (err) {
+        status("Буфер недоступен в этом браузере", "warn");
+        console.warn("Буфер недоступен", err);
+      }
+    });
+    root.querySelector("#avz-actions").addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-act]");
       if (!btn) return;
       const act = btn.getAttribute("data-act");
-      if (act === "reset") return;
       if (act === "print") {
         window.print();
         return;
       }
       const isInternal = act.endsWith("internal");
-      const canvas = isInternal ? renderInternalPng(lastReport) : renderQuotePng(lastQuote);
+      const canvas = isInternal ? internalPng() : renderQuotePng(last.quote);
       if (act.startsWith("copy")) {
         const ok = await copyCanvas(canvas);
         status(
-          ok ? "Картинка в буфере — вставьте в чат (Ctrl+V)" : "Буфер недоступен в этом браузере — сохраните файлом",
+          ok ? "Картинка в буфере — вставьте в чат (Ctrl+V)" : "Буфер недоступен — сохраните файлом",
           ok ? "ok" : "warn"
         );
         return;
@@ -2128,17 +2119,19 @@ body{margin:0;background:#f0f3f8}
       await downloadCanvas(canvas, fileName(isInternal ? "aveasy-vnutrenniy-raschet" : "aveasy-kp"));
       status(isInternal ? "Внутренний расчёт сохранён картинкой" : "Предложение для клиента сохранено картинкой");
     });
-    if (watch && "MutationObserver" in window) {
-      new MutationObserver(() => refresh()).observe(watch, { childList: true, subtree: true });
-    }
-    form.addEventListener("input", refresh);
-    refresh();
+    controls.applyTariff("start");
     const api = {
+      currentResult,
+      currentTariff,
       refresh,
-      report: () => lastReport,
-      quote: () => lastQuote,
-      internalPng: () => renderInternalPng(lastReport),
-      quotePng: () => renderQuotePng(lastQuote)
+      report: () => last.report,
+      quote: () => last.quote,
+      includes: () => last.includes,
+      fit: () => last.fit,
+      internalPng,
+      quotePng: () => renderQuotePng(last.quote),
+      config: config2,
+      baseConfig: baseConfig2
     };
     window.AVZ_INT = api;
     return api;
@@ -2147,15 +2140,7 @@ body{margin:0;background:#f0f3f8}
   // web/internal-page/entry.js
   var baseConfig = JSON.parse(JSON.stringify(config));
   function init() {
-    const form = document.getElementById("ave-form");
-    const out = document.getElementById("ave-out");
-    const presets = document.getElementById("ave-presets");
-    if (!form || !out) return;
-    const widget = mount(form, out, presets);
-    const advanced = document.querySelector(".avz-calc-adv");
-    if (advanced) advanced.setAttribute("open", "");
-    const host = document.getElementById("avz-internal-host") || document.body;
-    mountInternalPanel({ form, host, config, baseConfig, widget, watch: out });
+    mountApp({ root: document, config, baseConfig });
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
