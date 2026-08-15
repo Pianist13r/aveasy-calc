@@ -171,6 +171,15 @@ body {
 .avz-field input:focus,
 .avz-field select:focus { outline: 2px solid rgba(0, 85, 204, .35); outline-offset: 1px; }
 
+/* Пояснение под полем: что выбранный вариант значит на практике. */
+.avz-hint {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .avz-toggle {
   grid-column: 1 / -1;
   display: flex;
@@ -543,14 +552,10 @@ body {
 
     <div class="avz-field-group">
       <div class="avz-group-title">Услуги</div>
-      <label class="avz-field avz-field-wide">Данные о товарах
-        <select name="placementLevel">
-          <option value="R1">R1 — готовый фид</option>
-          <option value="R2" selected>R2 — прайс-лист / таблица</option>
-          <option value="R3">R3 — нужна интеграция</option>
-          <option value="R4">R4 — размещаем вручную</option>
-        </select>
+      <label class="avz-field avz-field-wide">Как у клиента сейчас с данными о товарах?
+        <select name="placementLevel" id="avz-placement"></select>
       </label>
+      <small class="avz-hint" id="avz-placement-hint"></small>
       <label class="avz-field">Автоответчик
         <select name="autoresponder">
           <option value="none">Нет</option>
@@ -635,14 +640,41 @@ body {
     // setup = разовая фикс-настройка; setupPerListing = разово за объявление.
     // Ежемесячная поддержка загрузки удалена (Pass 9): ведение существующих объявлений
     // покрыто «Ведением и оптимизацией»; добавление новых — отдельная услуга вне калькулятора.
+    // label — короткое внутреннее имя (отчёты, разбор по строкам).
+    // clientLabel — как спрашиваем у клиента (те же слова, что на сайте: менеджер и клиент
+    // должны говорить одинаково). explain — что это значит на практике, для подсказки в форме.
     placement: {
-      R1: { label: "Готовый фид", setup: 0, setupPerListing: 0 },
-      R2: { label: "Из прайс-таблицы", setup: 6e3, setupPerListing: 0 },
-      // 2026-07-03 +20% (было 5000)
-      R3: { label: "Сложная интеграция", setup: 3e4, setupPerListing: 0 },
-      // +20% (было 25000)
-      R4: { label: "Ручное размещение", setup: 0, setupPerListing: 18 }
-      // +20% (было 15)
+      R1: {
+        label: "Готовый фид",
+        setup: 0,
+        setupPerListing: 0,
+        clientLabel: "Уже настроена автозагрузка на Авито",
+        explain: "Объявления попадают на Авито сами из вашего фида — подключать выгрузку не нужно."
+      },
+      R2: {
+        label: "Из прайс-таблицы",
+        setup: 6e3,
+        setupPerListing: 0,
+        // 2026-07-03 +20% (было 5000)
+        clientLabel: "Есть прайс-лист или таблица товаров",
+        explain: "Один раз собираем из вашей таблицы файл выгрузки и подключаем автозагрузку."
+      },
+      R3: {
+        label: "Сложная интеграция",
+        setup: 3e4,
+        setupPerListing: 0,
+        // +20% (было 25000)
+        clientLabel: "Данные разрозненные, нужна интеграция",
+        explain: "Данные лежат в разных местах (сайт, 1С, CRM) — собираем их в один фид, это разработка."
+      },
+      R4: {
+        label: "Ручное размещение",
+        setup: 0,
+        setupPerListing: 18,
+        // +20% (было 15)
+        clientLabel: "Готовых данных нет, размещаем вручную",
+        explain: "Каждое объявление публикуем руками — поэтому цена зависит от их количества."
+      }
     },
     work: {
       // ⚠️ контент/ведение/автоответчик/аналитика/продвижение — черновые заглушки часов, калибровать
@@ -1056,7 +1088,11 @@ body {
     const modeLabel = config2.regionModes && config2.regionModes[inputs.regionMode] && config2.regionModes[inputs.regionMode].label || REGION_MODE_LABELS[inputs.regionMode] || inputs.regionMode;
     params.push({ label: "Регионов", value: `${fmtNum(inputs.regions)} — ${modeLabel}` });
     const pl = config2.placement[inputs.placementLevel];
-    params.push({ label: "Размещение", value: pl ? `${inputs.placementLevel} — ${pl.label}` : String(inputs.placementLevel) });
+    const plLabel = pl ? pl.clientLabel || pl.label : null;
+    params.push({
+      label: "Размещение",
+      value: plLabel ? `${plLabel} (${inputs.placementLevel})` : String(inputs.placementLevel)
+    });
     params.push({ label: "Автоответчик", value: AUTORESPONDER_LABELS[inputs.autoresponder] || inputs.autoresponder });
     params.push({ label: "Аналитика", value: ANALYTICS_LABELS[inputs.analytics] || inputs.analytics });
     params.push({ label: "Управление продвижением", value: inputs.promotionMgmt ? "Да" : "Нет" });
@@ -1347,12 +1383,27 @@ body {
     analytics: "basic",
     promotionMgmt: false
   };
+  function placementPrice(entry) {
+    if (entry.setup > 0) return `${fmtRub(entry.setup)} разово`;
+    if (entry.setupPerListing > 0) return `${fmtRub(entry.setupPerListing)} за объявление`;
+    return "бесплатно";
+  }
   function mountControls({ root, config: config2, onChange }) {
     const form = root.querySelector("#ave-form");
     const container = root.querySelector("#items-container");
     const addBtn = root.querySelector("#avz-add-item");
     const tariffsBox = root.querySelector("#avz-tariffs");
+    const placementSelect = root.querySelector("#avz-placement");
+    const placementHint = root.querySelector("#avz-placement-hint");
     let activeKey = null;
+    function renderPlacementOptions() {
+      placementSelect.innerHTML = Object.entries(config2.placement).map(([key, entry]) => `<option value="${key}">${entry.clientLabel} — ${placementPrice(entry)}</option>`).join("");
+      placementSelect.value = config2.defaultPlacementLevel || "R2";
+    }
+    function updatePlacementHint() {
+      const entry = config2.placement[placementSelect.value];
+      placementHint.textContent = entry ? entry.explain : "";
+    }
     function addItemRow(item) {
       const row = document.createElement("div");
       row.className = "item-row";
@@ -1395,6 +1446,7 @@ body {
       form.elements["noMonthly"].checked = false;
       activeKey = key;
       renderTariffs();
+      updatePlacementHint();
       onChange();
     }
     function renderTariffs() {
@@ -1425,8 +1477,11 @@ body {
     });
     form.addEventListener("change", () => {
       markManual();
+      updatePlacementHint();
       onChange();
     });
+    renderPlacementOptions();
+    updatePlacementHint();
     renderTariffs();
     return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
   }
