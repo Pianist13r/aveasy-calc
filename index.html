@@ -824,25 +824,7 @@ body {
         monthlyHoursPerListing: 0.05,
         typeMultiplier: { catalog: 0.8, serial: 1, unique: 1.6 },
         role: "avitolog"
-      },
-      // legacy (PIA-279 Task 8): src/impacts.js и src/reports.js больше это НЕ читают — расчёт
-      // и клиентские подписи идут через config.services выше. Оставлено, потому что читателем
-      // всё ещё остаётся web/demo.js (офлайн dev-демо, из него собирается web/demo-standalone.html
-      // через build-standalone.mjs) — он обращается к config.work.* напрямую, в обход impacts.js.
-      // Удалить можно только вместе с переводом web/demo.js на реестр (отдельная задача).
-      autoresponder: {
-        none: {},
-        basic: { monthlyHours: 2, role: "avitolog" },
-        trainable: { setupHours: 4, monthlyHours: 2.5, role: "dev" }
-      },
-      // legacy (PIA-279 Task 8) — см. комментарий выше про autoresponder: тот же случай.
-      analytics: {
-        basic: { monthlyHours: 0, role: "analyst" },
-        extended: { monthlyHours: 3.75, role: "analyst" },
-        crossCrm: { setupHours: 20, monthlyHours: 9.375, role: "dev" }
-      },
-      // legacy (PIA-279 Task 8) — см. комментарий выше про autoresponder: тот же случай.
-      promotionMgmt: { monthlyHours: 6, role: "avitolog" }
+      }
     },
     setupMin: 18e3,
     // 2026-07-03 +20% (было 15000)
@@ -1330,7 +1312,16 @@ body {
     return price === 0 ? 0 : Math.round((price - cost) / price * 100);
   }
   function totalsSubtitle(part) {
-    const profit = part.markupPct === null ? "вся цена — прибыль" : `наценка ${fmtNum(part.markupPct)}% · маржа ${fmtNum(part.marginPct)}%`;
+    let profit;
+    if (part.price === 0 && part.cost === 0) {
+      profit = "работ нет";
+    } else if (part.price === 0) {
+      profit = "цена 0 ₽ — минимум не сработал";
+    } else if (part.markupPct === null) {
+      profit = "вся цена — прибыль";
+    } else {
+      profit = `наценка ${fmtNum(part.markupPct)}% · маржа ${fmtNum(part.marginPct)}%`;
+    }
     return `себестоимость ${fmtRub(part.cost)} · ${profit}${part.isMinimum ? " · минимум" : ""}`;
   }
   var CONTENT_STATUS_LABELS = { own: "контент свой", partial: "контент частично", none: "контент делаем мы" };
@@ -1455,7 +1446,7 @@ body {
       case "hours":
         return `${fmtNum(raw)} ч`;
       case "multiplier":
-        return `×${raw}`;
+        return `×${fmtNum(raw)}`;
       default:
         return fmtRub(raw);
     }
@@ -1669,7 +1660,7 @@ body {
       services[key] = {};
       for (const [variantKey, variant] of Object.entries(variants)) {
         if (!variant) continue;
-        const entry = {};
+        const entry = { setup: 0, monthly: 0 };
         for (const phase of ["setup", "monthly"]) {
           const f = variant[phase];
           if (!f) continue;
@@ -1684,12 +1675,13 @@ body {
         services[key][variantKey] = entry;
       }
     }
+    const EMPTY_IMPACT = Object.freeze({ setup: 0, monthly: 0 });
     const autoresponderSvc = services.autoresponder || {};
     const analyticsSvc = services.analytics || {};
     const promotionMgmtSvc = services.promotionMgmt || {};
-    const autoresponder = { basic: autoresponderSvc.basic, trainable: autoresponderSvc.trainable };
-    const analytics = { extended: analyticsSvc.extended, crossCrm: analyticsSvc.crossCrm };
-    const promotionMgmt = promotionMgmtSvc.on;
+    const autoresponder = { basic: autoresponderSvc.basic || EMPTY_IMPACT, trainable: autoresponderSvc.trainable || EMPTY_IMPACT };
+    const analytics = { extended: analyticsSvc.extended || EMPTY_IMPACT, crossCrm: analyticsSvc.crossCrm || EMPTY_IMPACT };
+    const promotionMgmt = promotionMgmtSvc.on || EMPTY_IMPACT;
     const pl = config2.placement;
     const placement = {
       R1: { setup: pl.R1.setup },
@@ -1756,8 +1748,17 @@ body {
   }
 
   // web/internal-page/formIO.js
+  function nonNegativeInt(raw) {
+    return Math.max(0, Math.round(Number(raw) || 0));
+  }
+  function atLeastOneInt(raw) {
+    return Math.max(1, Math.round(Number(raw) || 0));
+  }
   function readInternalInputs(form, config2) {
     const inputs = readInputs(form);
+    inputs.accounts = atLeastOneInt(inputs.accounts);
+    inputs.regions = atLeastOneInt(inputs.regions);
+    inputs.items = inputs.items.map((item) => ({ ...item, listings: nonNegativeInt(item.listings) }));
     for (const [key, service] of Object.entries(config2.services || {})) {
       const el = form.elements[key];
       if (!el) continue;
@@ -1768,8 +1769,7 @@ body {
     const rows = form.querySelectorAll("#items-container .item-row");
     inputs.items = inputs.items.map((item, i) => {
       const field = rows[i] && rows[i].querySelector('input[name="itemNewPerMonth"]');
-      const raw = field ? Number(field.value) || 0 : 0;
-      return { ...item, newPerMonth: Math.max(0, Math.round(raw)) };
+      return { ...item, newPerMonth: nonNegativeInt(field ? field.value : 0) };
     });
     return inputs;
   }
