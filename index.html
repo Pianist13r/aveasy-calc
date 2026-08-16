@@ -551,17 +551,13 @@ body {
 <main class="avz-main">
   <form class="avz-controls" id="ave-form">
     <div class="avz-field-group">
-      <div class="avz-group-title">Товар и объём</div>
+      <div class="avz-group-title">Что размещаем</div>
       <div id="items-container"></div>
       <button type="button" class="avz-add-item" id="avz-add-item">+ ещё тип товара</button>
-    </div>
-
-    <div class="avz-field-group">
-      <div class="avz-group-title">Масштаб</div>
-      <label class="avz-field">Аккаунтов
+      <label class="avz-field">Профилей
         <input type="number" name="accounts" value="1" min="1" step="1">
       </label>
-      <label class="avz-field">Регионов
+      <label class="avz-field">Городов
         <input type="number" name="regions" value="1" min="1" step="1">
       </label>
       <label class="avz-field avz-field-wide">Как работаем с городами
@@ -571,27 +567,24 @@ body {
     </div>
 
     <div class="avz-field-group">
-      <div class="avz-group-title">Услуги</div>
+      <div class="avz-group-title">Запуск — разовые работы</div>
       <label class="avz-field avz-field-wide">Как у клиента сейчас с данными о товарах?
         <select name="placementLevel" id="avz-placement"></select>
       </label>
       <small class="avz-hint" id="avz-placement-hint"></small>
-      <label class="avz-field">Автоответчик
-        <select name="autoresponder">
-          <option value="none">Нет</option>
-          <option value="basic" selected>Обычный</option>
-          <option value="trainable">Обучаемый</option>
-        </select>
-      </label>
-      <label class="avz-field">Аналитика
-        <select name="analytics">
-          <option value="basic" selected>Базовая</option>
-          <option value="extended">Расширенная</option>
-          <option value="crossCrm">Сквозная + CRM</option>
-        </select>
-      </label>
-      <label class="avz-toggle"><input type="checkbox" name="promotionMgmt"><span>Управление продвижением</span></label>
-      <label class="avz-toggle"><input type="checkbox" name="noMonthly"><span>Разовый проект — без ведения</span></label>
+      <div id="avz-services-launch"></div>
+    </div>
+
+    <div class="avz-field-group">
+      <div class="avz-group-title">Ежемесячно</div>
+      <label class="avz-toggle"><input type="checkbox" name="managementOn" checked><span>Ведение и оптимизация</span></label>
+      <div id="avz-services-monthly"></div>
+      <label class="avz-toggle"><input type="checkbox" name="noMonthly"><span>Разовый проект — без ежемесячной части</span></label>
+    </div>
+
+    <div class="avz-field-group">
+      <div class="avz-group-title">Премиум</div>
+      <div id="avz-services-premium"></div>
     </div>
   </form>
 
@@ -696,24 +689,159 @@ body {
         explain: "Каждое объявление публикуем руками — поэтому цена зависит от их количества."
       }
     },
+    // Реестр простых услуг: услуга = запись, а не код. Часы и роли — те же, что были
+    // в work.*; переезд не менял ни одного числа (снимок test/baseline.test.js).
+    // forClient — что услуга даёт клиенту, для «что входит»; variant — вид услуги,
+    // который клиент видит в КП («Автоответчик — обучаемый»).
+    services: {
+      autoresponder: {
+        label: "Автоответчик",
+        section: "monthly",
+        control: "select",
+        order: 20,
+        default: "basic",
+        options: {
+          none: { clientLabel: "Не нужен" },
+          basic: {
+            clientLabel: "Обычный",
+            variant: "обычный",
+            forClient: "Мгновенный ответ на типовые вопросы по шаблонам",
+            monthly: { hours: 2, role: "avitolog" }
+          },
+          trainable: {
+            clientLabel: "Обучаемый под вас",
+            variant: "обучаемый",
+            forClient: "Бот учится на ваших диалогах и отвечает по вашим правилам",
+            setupLabel: "Настройка автоответчика",
+            setup: { hours: 4, role: "dev" },
+            // ⚠️ setup снижен 10→4 (конфиг бота под клиента, не тяжёлая разработка) — калибровать
+            monthly: { hours: 2.5, role: "dev" }
+          }
+        }
+      },
+      analytics: {
+        label: "Аналитика",
+        section: "monthly",
+        control: "select",
+        order: 30,
+        default: "basic",
+        options: {
+          basic: {
+            clientLabel: "Базовая",
+            variant: "базовая",
+            forClient: "Дашборд по вашему размещению: просмотры, контакты, расход",
+            monthly: { hours: 0, role: "analyst" }
+          },
+          extended: {
+            clientLabel: "Расширенная",
+            variant: "расширенная",
+            forClient: "Отчётность по источникам и категориям, разбор динамики раз в месяц",
+            monthly: { hours: 3.75, role: "analyst" }
+            // калибровка: цена клиенту ~12 000 ₽/мес (3.75ч×2000×1.6)
+          },
+          crossCrm: {
+            clientLabel: "Сквозная + CRM",
+            variant: "сквозная + CRM",
+            forClient: "Путь от объявления до сделки в вашей CRM — видно, что приносит деньги",
+            setupLabel: "Подключение сквозной аналитики/CRM",
+            setup: { hours: 20, role: "dev" },
+            // калибровка: setup 20ч → 64 000 ₽
+            monthly: { hours: 9.375, role: "dev" }
+            // калибровка: цена ~30 000 ₽/мес (9.375ч×2000×1.6)
+          }
+        }
+      },
+      promotionMgmt: {
+        label: "Управление продвижением",
+        section: "monthly",
+        control: "toggle",
+        order: 40,
+        default: false,
+        lineKey: "promotion",
+        on: {
+          forClient: "Ведём платное продвижение в рамках вашего бюджета Авито",
+          monthly: { hours: 6, role: "avitolog" }
+        }
+      },
+      profileSetup: {
+        label: "Оформление профиля и витрин",
+        section: "launch",
+        control: "toggle",
+        order: 10,
+        default: false,
+        on: {
+          forClient: "Шапка, описание компании, витрины и баннер профиля",
+          setupLabel: "Оформление профиля и витрин",
+          setup: { hoursPerAccount: 6, role: "avitolog" }
+        }
+      },
+      abTesting: {
+        label: "А/В-тесты и ротация",
+        section: "monthly",
+        control: "toggle",
+        order: 50,
+        default: false,
+        on: {
+          forClient: "Тестируем заголовки, фото и цены, ротируем объявления",
+          // Считается от числа объявлений, а не публикаций: тестируется карточка,
+          // а не её копия в каждом городе.
+          monthly: { hours: 2, hoursPerListing: 0.01, role: "avitolog" }
+        }
+      },
+      biReporting: {
+        label: "BI-отчётность",
+        section: "premium",
+        control: "toggle",
+        order: 60,
+        default: false,
+        on: {
+          forClient: "Свои дашборды и выгрузки под ваши вопросы к данным",
+          setupLabel: "Сборка BI-отчётности",
+          setup: { hours: 8, role: "dev" },
+          monthly: { hours: 2, role: "analyst" }
+        }
+      },
+      prioritySupport: {
+        label: "Приоритетное сопровождение",
+        section: "premium",
+        control: "toggle",
+        order: 70,
+        default: false,
+        on: {
+          forClient: "Выделенный менеджер и гарантированное время реакции",
+          monthly: { hours: 8, role: "avitolog" }
+        }
+      }
+    },
     work: {
-      // ⚠️ контент/ведение/автоответчик/аналитика/продвижение — черновые заглушки часов, калибровать
+      // ⚠️ контент/ведение — черновые заглушки часов, калибровать
       placement: null,
       // УСТАРЕЛО — placement теперь в config.placement выше (прямые клиентские цены)
-      management: { monthlyHoursPerAccount: 5, monthlyHoursPerListing: 0.05, role: "avitolog" },
+      // typeMultiplier — сложность ведения по типу товара, пропорции те же, что у контента
+      // (28/34/56 ₽): каталожный проще, уникальный требует больше внимания на объявление.
+      management: {
+        monthlyHoursPerAccount: 5,
+        monthlyHoursPerListing: 0.05,
+        typeMultiplier: { catalog: 0.8, serial: 1, unique: 1.6 },
+        role: "avitolog"
+      },
+      // legacy (PIA-279 Task 8): src/impacts.js и src/reports.js больше это НЕ читают — расчёт
+      // и клиентские подписи идут через config.services выше. Оставлено, потому что читателем
+      // всё ещё остаётся web/demo.js (офлайн dev-демо, из него собирается web/demo-standalone.html
+      // через build-standalone.mjs) — он обращается к config.work.* напрямую, в обход impacts.js.
+      // Удалить можно только вместе с переводом web/demo.js на реестр (отдельная задача).
       autoresponder: {
         none: {},
         basic: { monthlyHours: 2, role: "avitolog" },
         trainable: { setupHours: 4, monthlyHours: 2.5, role: "dev" }
-        // ⚠️ setup снижен 10→4 (конфиг бота под клиента, не тяжёлая разработка) — калибровать
       },
+      // legacy (PIA-279 Task 8) — см. комментарий выше про autoresponder: тот же случай.
       analytics: {
         basic: { monthlyHours: 0, role: "analyst" },
         extended: { monthlyHours: 3.75, role: "analyst" },
-        // калибровка: цена клиенту ~12 000 ₽/мес (3.75ч×2000×1.6)
         crossCrm: { setupHours: 20, monthlyHours: 9.375, role: "dev" }
-        // калибровка: цена ~30 000 ₽/мес (9.375ч×2000×1.6); setup 20ч → 64 000 ₽
       },
+      // legacy (PIA-279 Task 8) — см. комментарий выше про autoresponder: тот же случай.
       promotionMgmt: { monthlyHours: 6, role: "avitolog" }
     },
     setupMin: 18e3,
@@ -747,15 +875,16 @@ body {
     },
     // Тарифы, которые клиент видит на aveasy.ru (сняты с живого блока 15.08.2026).
     // anchor — публичная цена сайта: с ней сверяется расчёт (src/tariffFit.js).
-    // includes — дословные пункты оффера; осей под «А/В-тесты» и «выделенную команду»
-    // в движке нет, это текст тарифа, а не параметры расчёта.
+    // includes — дословные пункты оффера, которые остаются текстом (не осью расчёта).
+    // Оформление профиля, А/В-тесты, BI-отчётность и приоритетное сопровождение (PIA-279
+    // Task 6) стали услугами config.services — их формулировки убраны отсюда, чтобы не
+    // дублировать «что входит» дважды (текстом и строкой услуги).
     presets: {
       start: {
         label: "Старт",
         sub: "До 200 объявлений · тариф сайта от 35 000 ₽/мес",
         anchor: { monthly: 35e3, label: "от 35 000 ₽/мес" },
         includes: [
-          "Оформление профиля и витрин",
           "Медиаплан платных услуг",
           "CRM/Коллтрекинг — по запросу"
         ],
@@ -767,7 +896,8 @@ body {
           placementLevel: "R2",
           autoresponder: "basic",
           analytics: "extended",
-          promotionMgmt: true
+          promotionMgmt: true,
+          profileSetup: true
         }
       },
       optimal: {
@@ -775,7 +905,6 @@ body {
         sub: "До 1000 объявлений · тариф сайта от 50 000 ₽/мес",
         anchor: { monthly: 5e4, label: "от 50 000 ₽/мес" },
         includes: [
-          "Ведение и ротация, А/В-тесты",
           "Работа с отзывами и витринами",
           "Интеграции и отчётность"
         ],
@@ -787,7 +916,9 @@ body {
           placementLevel: "R2",
           autoresponder: "basic",
           analytics: "extended",
-          promotionMgmt: true
+          promotionMgmt: true,
+          profileSetup: true,
+          abTesting: true
         }
       },
       scale: {
@@ -795,9 +926,7 @@ body {
         sub: "1000+ объявлений, мульти-гео · цена по договорённости",
         anchor: null,
         includes: [
-          "Автозагрузка, шаблоны, SLA",
-          "Сквозная аналитика и BI-отчёты",
-          "Выделенная команда"
+          "Автозагрузка и шаблоны выгрузки"
         ],
         inputs: {
           items: [{ type: "serial", listings: 1500, contentStatus: "none" }],
@@ -807,11 +936,79 @@ body {
           placementLevel: "R3",
           autoresponder: "trainable",
           analytics: "crossCrm",
-          promotionMgmt: true
+          promotionMgmt: true,
+          profileSetup: true,
+          abTesting: true,
+          biReporting: true,
+          prioritySupport: true
         }
       }
     }
   };
+
+  // src/services.js
+  function resolveChoice(inputs, key, service) {
+    const raw = inputs[key];
+    if (service.control === "toggle") {
+      const on = raw === void 0 ? !!service.default : !!raw;
+      return on ? service.on : null;
+    }
+    const value = raw === void 0 ? service.default : raw;
+    return service.options && service.options[value] || null;
+  }
+  function formulaHours(formula, ctx) {
+    let hours = formula.hours || 0;
+    if (formula.hoursPerAccount) hours += formula.hoursPerAccount * ctx.accounts;
+    if (formula.hoursPerListing) hours += formula.hoursPerListing * ctx.totalListings;
+    return hours;
+  }
+  function buildLine({ lineKey, phase, service, choice, formula, config: config2, ctx }) {
+    const key = phase === "setup" ? `${lineKey}_setup` : lineKey;
+    const label = phase === "setup" ? choice.setupLabel || `Настройка — ${service.label}` : service.label;
+    if (typeof formula.fixedPrice === "number") {
+      return {
+        key,
+        label,
+        phase,
+        hours: null,
+        cost: Math.round(formula.fixedPrice / (1 + config2.targetMargin)),
+        fixedPrice: formula.fixedPrice,
+        qty: null,
+        unit: null,
+        variant: choice.variant || null,
+        forClient: choice.forClient || null
+      };
+    }
+    const hours = formulaHours(formula, ctx);
+    return {
+      key,
+      label,
+      phase,
+      role: formula.role,
+      hours,
+      cost: hours * config2.rates[formula.role],
+      qty: null,
+      unit: null,
+      variant: choice.variant || null,
+      forClient: choice.forClient || null
+    };
+  }
+  function serviceLines(inputs, config2, ctx) {
+    const registry = config2.services || {};
+    const entries = Object.entries(registry).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+    const lines = [];
+    for (const [key, service] of entries) {
+      const choice = resolveChoice(inputs, key, service);
+      if (!choice) continue;
+      const lineKey = service.lineKey || key;
+      for (const phase of ["setup", "monthly"]) {
+        const formula = choice[phase];
+        if (!formula) continue;
+        lines.push(buildLine({ lineKey, phase, service, choice, formula, config: config2, ctx }));
+      }
+    }
+    return lines;
+  }
 
   // src/cost.js
   function computeCost(inputs, config2) {
@@ -846,9 +1043,24 @@ body {
         perUnit
         // себестоимость ₽/объявл (до statusMultiplier)
       });
+      const newQty = (item.newPerMonth || 0) * contentMult;
+      if (newQty > 0 && mult > 0) {
+        lines.push({
+          key: `content_new#${i}`,
+          label: `Новые объявления — ${typeLabel}`,
+          phase: "monthly",
+          role: "content",
+          hours: null,
+          cost: perUnit * mult * newQty,
+          qty: newQty,
+          unit: "объявление",
+          perUnit
+        });
+      }
     });
     const totalListings = items.reduce((s, it) => s + it.listings, 0);
     const totalPublications = totalListings * pubMult;
+    const totalNewListings = items.reduce((s, it) => s + (it.newPerMonth || 0), 0);
     const pl = inputs.placementLevel;
     const P = config2.placement[pl];
     if (P) {
@@ -862,55 +1074,47 @@ body {
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
         lines.push({ key: "placement_setup_listing", label: "Размещение объявлений", phase: "setup", hours: null, cost, fixedPrice, qty: totalPublications, unit: "объявление" });
       }
+      const newPublications = totalNewListings * pubMult;
+      if (P.setupPerListing !== 0 && newPublications > 0) {
+        const fixedPrice = P.setupPerListing * newPublications;
+        const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
+        lines.push({
+          key: "placement_new",
+          label: "Размещение новых объявлений",
+          phase: "monthly",
+          hours: null,
+          cost,
+          fixedPrice,
+          qty: newPublications,
+          unit: "объявление"
+        });
+      }
     }
-    const mgmtH = w.management.monthlyHoursPerAccount * inputs.accounts + w.management.monthlyHoursPerListing * totalPublications;
-    const mgmtCost = mgmtH * rates[w.management.role];
-    lines.push({
-      key: "management",
-      label: "Ведение и оптимизация",
-      phase: "monthly",
-      role: w.management.role,
-      hours: mgmtH,
-      cost: mgmtCost,
-      qty: null,
-      unit: null,
-      scope: { listings: totalListings, publications: totalPublications, regions, accounts: inputs.accounts }
-    });
-    const ar = inputs.autoresponder;
-    if (ar === "basic") {
-      const h = w.autoresponder.basic.monthlyHours;
-      const cost = h * rates[w.autoresponder.basic.role];
-      lines.push({ key: "autoresponder", label: "Автоответчик", phase: "monthly", role: w.autoresponder.basic.role, hours: h, cost, qty: null, unit: null });
-    } else if (ar === "trainable") {
-      const hSetup = w.autoresponder.trainable.setupHours;
-      const costSetup = hSetup * rates[w.autoresponder.trainable.role];
-      lines.push({ key: "autoresponder_setup", label: "Настройка автоответчика", phase: "setup", role: w.autoresponder.trainable.role, hours: hSetup, cost: costSetup, qty: null, unit: null });
-      const hMonthly = w.autoresponder.trainable.monthlyHours;
-      const costMonthly = hMonthly * rates[w.autoresponder.trainable.role];
-      lines.push({ key: "autoresponder", label: "Автоответчик", phase: "monthly", role: w.autoresponder.trainable.role, hours: hMonthly, cost: costMonthly, qty: null, unit: null });
+    if (!inputs.noManagement) {
+      const typeMult = w.management.typeMultiplier || {};
+      const weightedListings = items.reduce(
+        (s, it) => s + it.listings * (typeMult[it.type] !== void 0 ? typeMult[it.type] : 1),
+        0
+      );
+      const mgmtH = w.management.monthlyHoursPerAccount * inputs.accounts + w.management.monthlyHoursPerListing * weightedListings * pubMult;
+      const mgmtCost = mgmtH * rates[w.management.role];
+      lines.push({
+        key: "management",
+        label: "Ведение и оптимизация",
+        phase: "monthly",
+        role: w.management.role,
+        hours: mgmtH,
+        cost: mgmtCost,
+        qty: null,
+        unit: null,
+        scope: { listings: totalListings, publications: totalPublications, regions, accounts: inputs.accounts }
+      });
     }
-    const an = inputs.analytics;
-    if (an === "basic") {
-      const h = w.analytics.basic.monthlyHours;
-      const cost = h * rates[w.analytics.basic.role];
-      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.basic.role, hours: h, cost, qty: null, unit: null });
-    } else if (an === "extended") {
-      const h = w.analytics.extended.monthlyHours;
-      const cost = h * rates[w.analytics.extended.role];
-      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.extended.role, hours: h, cost, qty: null, unit: null });
-    } else if (an === "crossCrm") {
-      const hSetup = w.analytics.crossCrm.setupHours;
-      const costSetup = hSetup * rates[w.analytics.crossCrm.role];
-      lines.push({ key: "analytics_setup", label: "Подключение сквозной аналитики/CRM", phase: "setup", role: w.analytics.crossCrm.role, hours: hSetup, cost: costSetup, qty: null, unit: null });
-      const hMonthly = w.analytics.crossCrm.monthlyHours;
-      const costMonthly = hMonthly * rates[w.analytics.crossCrm.role];
-      lines.push({ key: "analytics", label: "Аналитика", phase: "monthly", role: w.analytics.crossCrm.role, hours: hMonthly, cost: costMonthly, qty: null, unit: null });
-    }
-    if (inputs.promotionMgmt) {
-      const h = w.promotionMgmt.monthlyHours;
-      const cost = h * rates[w.promotionMgmt.role];
-      lines.push({ key: "promotion", label: "Управление продвижением", phase: "monthly", role: w.promotionMgmt.role, hours: h, cost, qty: null, unit: null });
-    }
+    lines.push(...serviceLines(inputs, config2, {
+      accounts: inputs.accounts,
+      totalListings,
+      totalPublications
+    }));
     const finalLines = inputs.noMonthly ? lines.filter((l) => l.phase !== "monthly") : lines;
     const sum = (phase) => finalLines.filter((l) => l.phase === phase).reduce((s, l) => s + l.cost, 0);
     return { setup: sum("setup"), monthly: sum("monthly"), lines: finalLines };
@@ -955,12 +1159,14 @@ body {
   function calculate(inputs, config2) {
     const cost = computeCost(inputs, config2);
     const price = computePrice(cost, config2);
-    const flooredSetup = Math.max(price.setup, config2.setupMin);
+    const setupEmpty = price.setup === 0;
+    const flooredSetup = setupEmpty ? price.setup : Math.max(price.setup, config2.setupMin);
     const setupMinApplied = flooredSetup > price.setup;
     const setupMinAdjustment = flooredSetup - price.setup;
     price.setup = flooredSetup;
     const noMonthly = !!inputs.noMonthly;
-    const flooredMonthly = noMonthly ? 0 : Math.max(price.monthly, config2.minMonthly);
+    const monthlyEmpty = price.monthly === 0;
+    const flooredMonthly = noMonthly || monthlyEmpty ? price.monthly : Math.max(price.monthly, config2.minMonthly);
     const minMonthlyApplied = !noMonthly && flooredMonthly > price.monthly;
     const minMonthlyAdjustment = flooredMonthly - price.monthly;
     price.monthly = flooredMonthly;
@@ -1022,17 +1228,8 @@ body {
       const unitShort = costLine.unit === "объявление" ? "объявл" : costLine.unit;
       return `${perUnit} ₽/${unitShort} × ${costLine.qty}`;
     }
-    const map = {
-      placement_setup: "разовая настройка",
-      placement_setup_listing: "разовая настройка",
-      autoresponder_setup: "разовая настройка",
-      analytics_setup: "разовая настройка",
-      management: "ежемесячно",
-      autoresponder: "ежемесячно",
-      analytics: "ежемесячно",
-      promotion: "ежемесячно"
-    };
-    return map[key] || null;
+    if (key === "placement_setup") return "разовая настройка";
+    return null;
   }
   function toClientView(result, config2) {
     const breakdown = [];
@@ -1066,29 +1263,44 @@ body {
     if (plSetupListingPrice > 0) {
       breakdown.push({ label: "Размещение объявлений", setup: plSetupListingPrice, detail: clientDetail("placement_setup_listing", plSetupListingPrice, plSetupListingCostLine) });
     }
-    const arSetupPrice = priceOf(result, "autoresponder_setup");
-    if (arSetupPrice > 0) {
-      breakdown.push({ label: "Настройка автоответчика", setup: arSetupPrice, detail: clientDetail("autoresponder_setup", arSetupPrice, null) });
-    }
-    const anSetupPrice = priceOf(result, "analytics_setup");
-    if (anSetupPrice > 0) {
-      breakdown.push({ label: "Подключение сквозной аналитики/CRM", setup: anSetupPrice, detail: clientDetail("analytics_setup", anSetupPrice, null) });
-    }
     const mgmtPrice = priceOf(result, "management");
     if (mgmtPrice > 0) {
       breakdown.push({ label: "Ведение и оптимизация", monthly: mgmtPrice, detail: clientDetail("management", mgmtPrice, costLineOf(result, "management")) });
     }
-    const autorespPrice = priceOf(result, "autoresponder");
-    if (autorespPrice > 0) {
-      breakdown.push({ label: "Автоответчик", monthly: autorespPrice, detail: clientDetail("autoresponder", autorespPrice, null) });
+    const contentNewLines = result.price.lines.filter((l) => l.key.startsWith("content_new#"));
+    const totalContentNewPrice = contentNewLines.reduce((s, l) => s + l.price, 0);
+    if (totalContentNewPrice > 0) {
+      const costContentNewLines = result.cost.lines.filter((l) => l.key.startsWith("content_new#"));
+      let detail;
+      if (contentNewLines.length === 1) {
+        const cl = costContentNewLines[0];
+        const perUnit = Math.round(contentNewLines[0].price / cl.qty);
+        detail = `${perUnit} ₽/объявл × ${cl.qty}`;
+      } else {
+        detail = contentNewLines.map((pl, i) => {
+          const cl = costContentNewLines[i];
+          const typeLabel = cl.label.replace(/^Новые объявления — /, "");
+          const shortLabel = typeLabel.split(" / ")[0].split(" ")[0];
+          const perUnit = Math.round(pl.price / cl.qty);
+          return `${shortLabel} ${cl.qty}×${perUnit} ₽`;
+        }).join(" + ");
+      }
+      breakdown.push({ label: "Новые объявления — контент", monthly: totalContentNewPrice, detail });
     }
-    const analyticsPrice = priceOf(result, "analytics");
-    if (analyticsPrice > 0) {
-      breakdown.push({ label: "Аналитика", monthly: analyticsPrice, detail: clientDetail("analytics", analyticsPrice, null) });
+    const placementNewPrice = priceOf(result, "placement_new");
+    if (placementNewPrice > 0) {
+      breakdown.push({ label: "Размещение новых объявлений", monthly: placementNewPrice, detail: clientDetail("placement_new", placementNewPrice, costLineOf(result, "placement_new")) });
     }
-    const promoPrice = priceOf(result, "promotion");
-    if (promoPrice > 0) {
-      breakdown.push({ label: "Управление продвижением", monthly: promoPrice, detail: clientDetail("promotion", promoPrice, null) });
+    for (const costLine of result.cost.lines) {
+      if (!costLine.forClient && !costLine.variant) continue;
+      const linePrice = priceOf(result, costLine.key);
+      if (linePrice <= 0) continue;
+      const isMonthly = costLine.phase !== "setup";
+      const label = isMonthly && costLine.variant ? `${costLine.label} — ${costLine.variant}` : costLine.label;
+      const entry = { label, detail: costLine.forClient || null };
+      if (isMonthly) entry.monthly = linePrice;
+      else entry.setup = linePrice;
+      breakdown.push(entry);
     }
     const isPreliminary = !!(result.guardrails.setupOverCeiling || result.guardrails.monthlyOverMarket);
     return {
@@ -1121,8 +1333,6 @@ body {
     const profit = part.markupPct === null ? "вся цена — прибыль" : `наценка ${fmtNum(part.markupPct)}% · маржа ${fmtNum(part.marginPct)}%`;
     return `себестоимость ${fmtRub(part.cost)} · ${profit}${part.isMinimum ? " · минимум" : ""}`;
   }
-  var AUTORESPONDER_LABELS = { none: "Нет", basic: "Обычный", trainable: "Обучаемый" };
-  var ANALYTICS_LABELS = { basic: "Базовая", extended: "Расширенная", crossCrm: "Сквозная + CRM" };
   var CONTENT_STATUS_LABELS = { own: "контент свой", partial: "контент частично", none: "контент делаем мы" };
   var REGION_MODE_LABELS = {
     single: "одно объявление на все регионы",
@@ -1131,6 +1341,11 @@ body {
   };
   function atPath(obj, path) {
     return path.reduce((o, k) => o == null ? void 0 : o[k], obj);
+  }
+  function optionParamLabel(option) {
+    if (!option) return null;
+    if (option.variant) return option.variant.charAt(0).toUpperCase() + option.variant.slice(1);
+    return option.clientLabel;
   }
   function costDetail(costLine) {
     if (costLine.qty > 0) {
@@ -1158,14 +1373,54 @@ body {
       label: "Размещение",
       value: plLabel ? `${plLabel} (${inputs.placementLevel})` : String(inputs.placementLevel)
     });
-    params.push({ label: "Автоответчик", value: AUTORESPONDER_LABELS[inputs.autoresponder] || inputs.autoresponder });
-    params.push({ label: "Аналитика", value: ANALYTICS_LABELS[inputs.analytics] || inputs.analytics });
-    params.push({ label: "Управление продвижением", value: inputs.promotionMgmt ? "Да" : "Нет" });
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      if (service.control === "toggle") {
+        const on = inputs[key] === void 0 ? !!service.default : !!inputs[key];
+        params.push({ label: service.label, value: on ? "Да" : "Нет" });
+        continue;
+      }
+      const value = inputs[key] === void 0 ? service.default : inputs[key];
+      const option = service.options && service.options[value] || null;
+      params.push({ label: service.label, value: option ? optionParamLabel(option) : String(value) });
+    }
+    if (inputs.noManagement) params.push({ label: "Ведение", value: "Выключено" });
     if (inputs.noMonthly) params.push({ label: "Разовый проект", value: "Да — без ежемесячного ведения" });
     return params;
   }
-  function modelParamSpecs() {
-    return [
+  var FORMULA_FIELDS = [
+    { field: "hours", kind: "hours", step: 0.25, wordSuffix: "" },
+    { field: "hoursPerAccount", kind: "hours", step: 0.5, wordSuffix: " за аккаунт" },
+    { field: "hoursPerListing", kind: "hours", step: 0.01, wordSuffix: " за объявление" },
+    { field: "fixedPrice", kind: "money", step: 500, wordSuffix: "" }
+  ];
+  function serviceParamSpecs(config2) {
+    const specs = [];
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      const variants = service.control === "toggle" ? [["on", service.on]] : Object.entries(service.options || {});
+      for (const [variantKey, variant] of variants) {
+        if (!variant) continue;
+        const base = service.control === "toggle" ? ["services", key, "on"] : ["services", key, "options", variantKey];
+        for (const phase of ["setup", "monthly"]) {
+          const f = variant[phase];
+          if (!f) continue;
+          const variantWord = service.control === "toggle" ? "" : ` ${variant.clientLabel}`;
+          for (const { field, kind, step, wordSuffix } of FORMULA_FIELDS) {
+            if (typeof f[field] !== "number") continue;
+            const phaseWord = kind === "money" ? phase === "setup" ? "настройка" : "₽/мес" : phase === "setup" ? "настройка" : "ч/мес";
+            specs.push({
+              path: [...base, phase, field],
+              label: `${service.label}${variantWord} — ${phaseWord}${wordSuffix}`,
+              kind,
+              step
+            });
+          }
+        }
+      }
+    }
+    return specs;
+  }
+  function modelParamSpecs(config2) {
+    const staticSpecs = [
       { path: ["targetMargin"], label: "Целевая маржа", kind: "percent", step: 0.05 },
       { path: ["rates", "avitolog"], label: "Ставка — авитолог", kind: "rate", step: 5 },
       { path: ["rates", "analyst"], label: "Ставка — аналитик", kind: "rate", step: 10 },
@@ -1178,18 +1433,15 @@ body {
       { path: ["placement", "R4", "setupPerListing"], label: "Размещение R4 — за объявление", kind: "perListing", step: 1 },
       { path: ["work", "management", "monthlyHoursPerAccount"], label: "Ведение — часов на аккаунт/мес", kind: "hours", step: 0.5 },
       { path: ["work", "management", "monthlyHoursPerListing"], label: "Ведение — часов на объявление/мес", kind: "hours", step: 0.01 },
-      { path: ["work", "autoresponder", "basic", "monthlyHours"], label: "Автоответчик обычный — ч/мес", kind: "hours", step: 0.5 },
-      { path: ["work", "autoresponder", "trainable", "setupHours"], label: "Автоответчик обучаемый — настройка, ч", kind: "hours", step: 0.5 },
-      { path: ["work", "autoresponder", "trainable", "monthlyHours"], label: "Автоответчик обучаемый — ч/мес", kind: "hours", step: 0.5 },
-      { path: ["work", "analytics", "extended", "monthlyHours"], label: "Аналитика расширенная — ч/мес", kind: "hours", step: 0.25 },
-      { path: ["work", "analytics", "crossCrm", "setupHours"], label: "Сквозная аналитика — настройка, ч", kind: "hours", step: 1 },
-      { path: ["work", "analytics", "crossCrm", "monthlyHours"], label: "Сквозная аналитика — ч/мес", kind: "hours", step: 0.25 },
-      { path: ["work", "promotionMgmt", "monthlyHours"], label: "Продвижение — ч/мес", kind: "hours", step: 0.5 },
+      { path: ["work", "management", "typeMultiplier", "catalog"], label: "Ведение — множитель, каталожный", kind: "multiplier", step: 0.05 },
+      { path: ["work", "management", "typeMultiplier", "serial"], label: "Ведение — множитель, серийный", kind: "multiplier", step: 0.05 },
+      { path: ["work", "management", "typeMultiplier", "unique"], label: "Ведение — множитель, уникальный", kind: "multiplier", step: 0.05 },
       { path: ["setupMin"], label: "Минимум по настройке", kind: "money", step: 500 },
       { path: ["minMonthly"], label: "Минимум по ведению", kind: "money", step: 500 },
       { path: ["market", "setupCeiling"], label: "Рыночный потолок — настройка", kind: "money", step: 1e3 },
       { path: ["market", "monthlyCeiling"], label: "Рыночный потолок — ведение", kind: "money", step: 1e3 }
     ];
+    return [...staticSpecs, ...serviceParamSpecs(config2)];
   }
   function formatModelValue(raw, kind) {
     if (raw == null) return "—";
@@ -1202,12 +1454,14 @@ body {
         return `${fmtRub(raw)}/объявл`;
       case "hours":
         return `${fmtNum(raw)} ч`;
+      case "multiplier":
+        return `×${raw}`;
       default:
         return fmtRub(raw);
     }
   }
   function buildModel(config2, baseConfig2) {
-    return modelParamSpecs().map((spec) => {
+    return modelParamSpecs(config2).map((spec) => {
       const raw = atPath(config2, spec.path);
       const baseRaw = baseConfig2 ? atPath(baseConfig2, spec.path) : raw;
       return {
@@ -1395,6 +1649,67 @@ body {
     return { title, services, tariffPoints, totals: totals2, text: toText(title, services, tariffPoints) };
   }
 
+  // src/impacts.js
+  function computeImpacts(config2) {
+    const m = 1 + config2.targetMargin;
+    const r = config2.roundTo;
+    const rates = config2.rates;
+    const w = config2.work;
+    function price(cost) {
+      if (!r || r <= 1) return Math.round(cost * m);
+      return Math.round(cost * m / r) * r;
+    }
+    const contentPerListing = {};
+    for (const [type, costPerUnit] of Object.entries(config2.content.byType)) {
+      contentPerListing[type] = Math.round(costPerUnit * m);
+    }
+    const services = {};
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      const variants = service.control === "toggle" ? { on: service.on } : service.options || {};
+      services[key] = {};
+      for (const [variantKey, variant] of Object.entries(variants)) {
+        if (!variant) continue;
+        const entry = {};
+        for (const phase of ["setup", "monthly"]) {
+          const f = variant[phase];
+          if (!f) continue;
+          if (typeof f.fixedPrice === "number") {
+            entry[phase] = f.fixedPrice;
+            continue;
+          }
+          const hours = (f.hours || 0) + (f.hoursPerAccount || 0) + (f.hoursPerListing || 0) * 100;
+          entry[phase] = price(hours * rates[f.role]);
+          if (f.hoursPerAccount || f.hoursPerListing) entry[`${phase}Approx`] = true;
+        }
+        services[key][variantKey] = entry;
+      }
+    }
+    const autoresponderSvc = services.autoresponder || {};
+    const analyticsSvc = services.analytics || {};
+    const promotionMgmtSvc = services.promotionMgmt || {};
+    const autoresponder = { basic: autoresponderSvc.basic, trainable: autoresponderSvc.trainable };
+    const analytics = { extended: analyticsSvc.extended, crossCrm: analyticsSvc.crossCrm };
+    const promotionMgmt = promotionMgmtSvc.on;
+    const pl = config2.placement;
+    const placement = {
+      R1: { setup: pl.R1.setup },
+      R2: { setup: pl.R2.setup },
+      R3: { setup: pl.R3.setup },
+      R4: { setupPerListing: pl.R4.setupPerListing }
+    };
+    const perAccountMonthlyCost = w.management.monthlyHoursPerAccount * rates[w.management.role];
+    const perAccountMonthly = price(perAccountMonthlyCost);
+    return {
+      contentPerListing,
+      services,
+      autoresponder,
+      analytics,
+      placement,
+      promotionMgmt,
+      perAccountMonthly
+    };
+  }
+
   // web/widget.js
   function applyPreset(form, presetInputs, addItemRowFn) {
     const el = form.elements;
@@ -1440,6 +1755,37 @@ body {
     };
   }
 
+  // web/internal-page/formIO.js
+  function readInternalInputs(form, config2) {
+    const inputs = readInputs(form);
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      const el = form.elements[key];
+      if (!el) continue;
+      inputs[key] = service.control === "toggle" ? el.checked : el.value;
+    }
+    const mgmt = form.elements["managementOn"];
+    inputs.noManagement = mgmt ? !mgmt.checked : false;
+    const rows = form.querySelectorAll("#items-container .item-row");
+    inputs.items = inputs.items.map((item, i) => {
+      const field = rows[i] && rows[i].querySelector('input[name="itemNewPerMonth"]');
+      const raw = field ? Number(field.value) || 0 : 0;
+      return { ...item, newPerMonth: Math.max(0, Math.round(raw)) };
+    });
+    return inputs;
+  }
+  function applyInternalPreset(form, presetInputs, config2, addItemRowFn) {
+    applyPreset(form, presetInputs, addItemRowFn);
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      const el = form.elements[key];
+      if (!el) continue;
+      const value = presetInputs[key] === void 0 ? service.default : presetInputs[key];
+      if (service.control === "toggle") el.checked = !!value;
+      else el.value = value;
+    }
+    const mgmt = form.elements["managementOn"];
+    if (mgmt) mgmt.checked = !presetInputs.noManagement;
+  }
+
   // web/internal-page/controls.js
   var SCRATCH = {
     items: [{ type: "serial", listings: 50, contentStatus: "none" }],
@@ -1451,10 +1797,33 @@ body {
     analytics: "basic",
     promotionMgmt: false
   };
+  var SERVICE_SECTIONS = ["launch", "monthly", "premium"];
+  function orphanServiceKeys(config2) {
+    return Object.entries(config2.services || {}).filter(([, service]) => !SERVICE_SECTIONS.includes(service.section)).map(([key]) => key);
+  }
   function placementPrice(entry) {
     if (entry.setup > 0) return `${fmtRub(entry.setup)} разово`;
     if (entry.setupPerListing > 0) return `${fmtRub(entry.setupPerListing)} за объявление`;
     return "бесплатно";
+  }
+  function priceHint(entry) {
+    if (!entry) return "";
+    const parts = [];
+    if (entry.setup) parts.push(`${entry.setupApprox ? "от " : ""}${fmtRub(entry.setup)} настройка`);
+    if (entry.monthly) parts.push(`${entry.monthlyApprox ? "от " : ""}${fmtRub(entry.monthly)}/мес`);
+    if (!parts.length) return " — бесплатно";
+    return ` — ${parts.join(" + ")}`;
+  }
+  function serviceField(key, service, impacts) {
+    if (service.control === "toggle") {
+      const hint = priceHint(impacts[key] && impacts[key].on);
+      return `<label class="avz-toggle"><input type="checkbox" name="${key}"${service.default ? " checked" : ""}><span>${service.label}${hint}</span></label>`;
+    }
+    const options = Object.entries(service.options).map(([value, option]) => {
+      const hint = option.setup || option.monthly ? priceHint(impacts[key] && impacts[key][value]) : "";
+      return `<option value="${value}"${value === service.default ? " selected" : ""}>${option.clientLabel}${hint}</option>`;
+    }).join("");
+    return `<label class="avz-field avz-field-wide">${service.label}<select name="${key}">${options}</select></label>`;
   }
   function mountControls({ root, config: config2, onChange }) {
     const form = root.querySelector("#ave-form");
@@ -1474,6 +1843,17 @@ body {
       regionSelect.innerHTML = Object.entries(config2.regionModes).map(([key, mode]) => `<option value="${key}">${mode.label}</option>`).join("");
       regionSelect.value = config2.defaultRegionMode || "single";
     }
+    function renderServices() {
+      for (const key of orphanServiceKeys(config2)) {
+        console.warn(`[avz] услуга "${key}" не попадёт в форму: config.services.${key}.section = "${config2.services[key].section}" не входит в [${SERVICE_SECTIONS.join(", ")}]`);
+      }
+      const impacts = computeImpacts(config2).services || {};
+      for (const section of SERVICE_SECTIONS) {
+        const box = root.querySelector(`#avz-services-${section}`);
+        if (!box) continue;
+        box.innerHTML = Object.entries(config2.services || {}).filter(([, s]) => s.section === section).sort((a, b) => (a[1].order || 0) - (b[1].order || 0)).map(([key, service]) => serviceField(key, service, impacts)).join("");
+      }
+    }
     function updateHints() {
       const placement = config2.placement[placementSelect.value];
       placementHint.textContent = placement ? placement.explain : "";
@@ -1487,6 +1867,9 @@ body {
       const typeOptions = Object.entries(config2.content.typeLabels).map(([value, label]) => `<option value="${value}"${item && item.type === value ? " selected" : ""}>${label}</option>`).join("");
       row.innerHTML = `
       <input type="number" name="itemListings" class="avz-qty" min="1" step="10" value="${item ? item.listings : 50}">
+      <input type="number" name="itemNewPerMonth" class="avz-qty avz-qty-new" min="0" step="5"
+             title="Сколько новых объявлений добавляем каждый месяц"
+             value="${item && item.newPerMonth ? item.newPerMonth : 0}">
       <select name="itemType" class="avz-item-type">${typeOptions}</select>
       <select name="itemContentStatus" class="avz-item-status">
         <option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>контент свой</option>
@@ -1519,7 +1902,7 @@ body {
     }
     function applyTariff(key) {
       const inputs = key ? config2.presets[key].inputs : SCRATCH;
-      applyPreset(form, inputs, addItemRow);
+      applyInternalPreset(form, inputs, config2, addItemRow);
       form.elements["noMonthly"].checked = false;
       activeKey = key;
       renderTariffs();
@@ -1559,6 +1942,7 @@ body {
     });
     renderPlacementOptions();
     renderRegionOptions();
+    renderServices();
     updateHints();
     renderTariffs();
     return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
@@ -1663,7 +2047,7 @@ body {
     return true;
   }
   function applyOverridesInPlace(liveConfig, baseConfig2, overrides = {}) {
-    for (const spec of modelParamSpecs()) {
+    for (const spec of modelParamSpecs(baseConfig2)) {
       const key = pathKey(spec.path);
       const baseValue = readAtPath(baseConfig2, spec.path);
       if (baseValue === void 0) continue;
@@ -2178,7 +2562,7 @@ body {
     const form = root.querySelector("#ave-form");
     if (!form) return null;
     function currentResult() {
-      return calculate(readInputs(form), config2);
+      return calculate(readInternalInputs(form, config2), config2);
     }
     const controls = mountControls({ root, config: config2, onChange: () => refresh() });
     const summary = mountSummary({ root });
