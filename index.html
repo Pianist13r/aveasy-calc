@@ -580,6 +580,7 @@ body {
       <label class="avz-toggle"><input type="checkbox" name="managementOn" checked><span>Ведение и оптимизация</span></label>
       <div id="avz-services-monthly"></div>
       <label class="avz-toggle"><input type="checkbox" name="noMonthly"><span>Разовый проект — без ежемесячной части</span></label>
+      <label class="avz-toggle"><input type="checkbox" name="componentOrder"><span>Отдельная услуга по прайсу (без ведения и минимума комплексного проекта)</span></label>
     </div>
 
     <div class="avz-field-group">
@@ -610,7 +611,7 @@ body {
 
 <script>
 (() => {
-  // config/pricing.config.js
+  // ../Aveasy/core/pricing/config/pricing.config.js
   var config = {
     currency: "RUB",
     rates: {
@@ -622,8 +623,12 @@ body {
       // +13% — было 2000
     },
     targetMargin: 0.7,
-    // 2026-07-03: 0.6→0.7 (маржа подросла); с rates+13% и placement+20% даёт ~+20% цены клиенту
+    // Историческое имя: НАЦЕНКА 70% на расчётные затраты, валовая маржа ≈41,18%.
     marginFloor: 0.5,
+    // Минимум наценки 50% (валовая маржа 33,33%), не чистой прибыли.
+    priceVersion: "2026-10-03",
+    componentMin: 0,
+    // Опубликованные отдельные услуги; комплексные проекты сохраняют setupMin.
     roundTo: 500,
     content: {
       // Себестоимость создания контента ₽/объявление по типу товара
@@ -883,6 +888,7 @@ body {
     presets: {
       start: {
         label: "Старт",
+        maxListings: 200,
         sub: "До 200 объявлений · тариф сайта от 35 000 ₽/мес",
         anchor: { monthly: 35e3, label: "от 35 000 ₽/мес" },
         includes: [
@@ -890,33 +896,36 @@ body {
           "CRM/Коллтрекинг — по запросу"
         ],
         inputs: {
+          tariff: "start",
           items: [{ type: "serial", listings: 200, contentStatus: "none" }],
           accounts: 1,
           regions: 1,
           regionMode: "single",
           placementLevel: "R2",
-          autoresponder: "basic",
-          analytics: "extended",
+          autoresponder: "none",
+          analytics: "basic",
           promotionMgmt: true,
           profileSetup: true
         }
       },
       optimal: {
         label: "Оптимальный",
+        maxListings: 1e3,
         sub: "До 1000 объявлений · тариф сайта от 50 000 ₽/мес",
         anchor: { monthly: 5e4, label: "от 50 000 ₽/мес" },
         includes: [
           "Работа с отзывами и витринами",
-          "Интеграции и отчётность"
+          "Базовая статистика и отчётность"
         ],
         inputs: {
+          tariff: "optimal",
           items: [{ type: "serial", listings: 500, contentStatus: "none" }],
           accounts: 1,
           regions: 1,
           regionMode: "single",
           placementLevel: "R2",
-          autoresponder: "basic",
-          analytics: "extended",
+          autoresponder: "none",
+          analytics: "basic",
           promotionMgmt: true,
           profileSetup: true,
           abTesting: true
@@ -930,6 +939,7 @@ body {
           "Автозагрузка и шаблоны выгрузки"
         ],
         inputs: {
+          tariff: "scale",
           items: [{ type: "serial", listings: 1500, contentStatus: "none" }],
           accounts: 2,
           regions: 3,
@@ -947,7 +957,7 @@ body {
     }
   };
 
-  // src/services.js
+  // ../Aveasy/core/pricing/src/services.js
   function resolveChoice(inputs, key, service) {
     const raw = inputs[key];
     if (service.control === "toggle") {
@@ -1011,7 +1021,7 @@ body {
     return lines;
   }
 
-  // src/cost.js
+  // ../Aveasy/core/pricing/src/cost.js
   function computeCost(inputs, config2) {
     const w = config2.work;
     const rates = config2.rates;
@@ -1061,6 +1071,7 @@ body {
     });
     const totalListings = items.reduce((s, it) => s + it.listings, 0);
     const totalPublications = totalListings * pubMult;
+    const placementQty = totalListings * contentMult;
     const totalNewListings = items.reduce((s, it) => s + (it.newPerMonth || 0), 0);
     const pl = inputs.placementLevel;
     const P = config2.placement[pl];
@@ -1070,12 +1081,12 @@ body {
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
         lines.push({ key: "placement_setup", label: "Настройка размещения", phase: "setup", hours: null, cost, fixedPrice, qty: null, unit: null });
       }
-      if (P.setupPerListing !== 0 && totalPublications > 0) {
-        const fixedPrice = P.setupPerListing * totalPublications;
+      if (P.setupPerListing !== 0 && placementQty > 0) {
+        const fixedPrice = P.setupPerListing * placementQty;
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
-        lines.push({ key: "placement_setup_listing", label: "Размещение объявлений", phase: "setup", hours: null, cost, fixedPrice, qty: totalPublications, unit: "объявление" });
+        lines.push({ key: "placement_setup_listing", label: "Размещение объявлений", phase: "setup", hours: null, cost, fixedPrice, qty: placementQty, unit: "объявление" });
       }
-      const newPublications = totalNewListings * pubMult;
+      const newPublications = totalNewListings * contentMult;
       if (P.setupPerListing !== 0 && newPublications > 0) {
         const fixedPrice = P.setupPerListing * newPublications;
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
@@ -1093,7 +1104,7 @@ body {
     }
     if (!inputs.noManagement) {
       const typeMult = w.management.typeMultiplier || {};
-      const weightedListings = items.reduce(
+      const weightedListings = pubMult * items.reduce(
         (s, it) => s + it.listings * (typeMult[it.type] !== void 0 ? typeMult[it.type] : 1),
         0
       );
@@ -1121,7 +1132,7 @@ body {
     return { setup: sum("setup"), monthly: sum("monthly"), lines: finalLines };
   }
 
-  // src/price.js
+  // ../Aveasy/core/pricing/src/price.js
   function round(x, step) {
     if (!step || step <= 1) return Math.round(x);
     return Math.round(x / step) * step;
@@ -1144,7 +1155,7 @@ body {
     return { setup: sum("setup"), monthly: sum("monthly"), lines };
   }
 
-  // src/guardrails.js
+  // ../Aveasy/core/pricing/src/guardrails.js
   function checkMarket(price, config2) {
     const setupCeiling = config2.market && config2.market.setupCeiling;
     return {
@@ -1153,47 +1164,207 @@ body {
     };
   }
 
-  // src/engine.js
+  // ../Aveasy/core/pricing/src/validate.js
+  function describe(v) {
+    return typeof v === "string" ? `«${v}»` : String(v);
+  }
+  function assertIntegerAtLeast(value, min, what) {
+    if (!Number.isInteger(value) || value < min) {
+      throw new RangeError(
+        `Некорректное значение ${what}: ожидается целое число не меньше ${min}, получено ${describe(value)}`
+      );
+    }
+  }
+  function validateConfig(config2) {
+    if (config2 == null || typeof config2 !== "object") {
+      throw new RangeError(`config должен быть объектом прайса, получено ${describe(config2)}`);
+    }
+    if (config2.roundTo !== void 0 && !(typeof config2.roundTo === "number" && Number.isFinite(config2.roundTo) && config2.roundTo > 0)) {
+      throw new RangeError(
+        `config.roundTo должен быть положительным числом (шаг округления цены), получено ${describe(config2.roundTo)}`
+      );
+    }
+    if (config2.targetMargin !== void 0 && !(typeof config2.targetMargin === "number" && Number.isFinite(config2.targetMargin) && config2.targetMargin >= 0)) {
+      throw new RangeError(
+        `config.targetMargin должен быть числом не меньше 0 (целевая наценка), получено ${describe(config2.targetMargin)}`
+      );
+    }
+  }
+  function prepareInputs(inputs, config2) {
+    if (inputs == null || typeof inputs !== "object") {
+      throw new RangeError(`inputs должен быть объектом параметров расчёта, получено ${describe(inputs)}`);
+    }
+    validateConfig(config2);
+    for (const flag of ["noMonthly", "noManagement"]) {
+      if (inputs[flag] !== void 0 && typeof inputs[flag] !== "boolean") {
+        throw new RangeError(`Параметр ${flag} должен быть логическим значением.`);
+      }
+    }
+    if (inputs.tariff !== void 0 && !Object.hasOwn(config2.presets || {}, inputs.tariff)) {
+      throw new RangeError("Неизвестный тариф.");
+    }
+    for (const [key, service] of Object.entries(config2.services || {})) {
+      if (inputs[key] === void 0) continue;
+      if (service.control === "select" && service.options && !Object.hasOwn(service.options, inputs[key])) {
+        throw new RangeError(`Неизвестный вариант услуги: ${service.label}.`);
+      }
+      if (service.control === "toggle" && typeof inputs[key] !== "boolean") {
+        throw new RangeError(`Выберите включение услуги: ${service.label}.`);
+      }
+    }
+    if (inputs.quoteMode !== void 0) {
+      if (inputs.quoteMode !== "component") {
+        throw new RangeError(
+          `Неизвестный режим сметы quoteMode ${describe(inputs.quoteMode)} — допустим только «component» или без поля (обычная смета)`
+        );
+      }
+      if (inputs.noManagement !== true) {
+        throw new RangeError(
+          "Режим сметы «component» допустим только вместе с noManagement=true: компонентная смета собирается без ежемесячного ведения"
+        );
+      }
+    }
+    if (inputs.accounts !== void 0) assertIntegerAtLeast(inputs.accounts, 1, "accounts (число аккаунтов)");
+    if (inputs.regions !== void 0) assertIntegerAtLeast(inputs.regions, 1, "regions (число регионов)");
+    if (inputs.items !== void 0 && !Array.isArray(inputs.items)) {
+      throw new RangeError(`items должен быть массивом товар-строк, получено ${describe(inputs.items)}`);
+    }
+    const types = Object.keys(config2.content && config2.content.byType || {});
+    const statuses = Object.keys(config2.content && config2.content.statusMultiplier || {});
+    (inputs.items || []).forEach((item, i) => {
+      const where = `items[${i}]`;
+      if (item == null || typeof item !== "object") {
+        throw new RangeError(`${where} должен быть объектом товар-строки, получено ${describe(item)}`);
+      }
+      if (item.type !== void 0 && !types.includes(item.type)) {
+        throw new RangeError(
+          `${where}.type: неизвестный тип товара ${describe(item.type)} (известные: ${types.join(", ")})`
+        );
+      }
+      if (item.contentStatus !== void 0 && !statuses.includes(item.contentStatus)) {
+        throw new RangeError(
+          `${where}.contentStatus: неизвестный статус контента ${describe(item.contentStatus)} (известные: ${statuses.join(", ")})`
+        );
+      }
+      if (item.listings !== void 0) {
+        assertIntegerAtLeast(item.listings, 0, `${where}.listings (число объявлений)`);
+      }
+      if (item.newPerMonth !== void 0) {
+        assertIntegerAtLeast(item.newPerMonth, 0, `${where}.newPerMonth (новых объявлений в месяц)`);
+      }
+    });
+    const packageLimit = config2.presets?.[inputs.tariff]?.maxListings;
+    if (!inputs.noMonthly && !inputs.noManagement && packageLimit && (inputs.items || []).reduce((sum, item) => sum + (item.listings || 0), 0) > packageLimit) {
+      throw new RangeError(`Выбранный пакет рассчитан на объём до ${packageLimit} объявлений. Выберите следующий пакет или «С нуля».`);
+    }
+    const placementKeys = Object.keys(config2.placement || {});
+    if (inputs.placementLevel !== void 0 && !placementKeys.includes(inputs.placementLevel)) {
+      throw new RangeError(
+        `placementLevel: неизвестный уровень размещения ${describe(inputs.placementLevel)} (известные: ${placementKeys.join(", ")})`
+      );
+    }
+    return {
+      ...inputs,
+      accounts: inputs.accounts === void 0 ? 1 : inputs.accounts,
+      regions: inputs.regions === void 0 ? 1 : inputs.regions,
+      items: (inputs.items || []).map((item) => ({
+        ...item,
+        type: item.type === void 0 ? "serial" : item.type,
+        contentStatus: item.contentStatus === void 0 ? "none" : item.contentStatus,
+        listings: item.listings === void 0 ? 0 : item.listings
+      }))
+    };
+  }
+
+  // ../Aveasy/core/pricing/src/engine.js
   function pct(price, cost) {
     return cost === 0 ? 0 : (price - cost) / cost;
   }
+  function phaseEconomics(price, cost, marginFloor) {
+    const grossProfit = price - cost;
+    const markupPct2 = cost === 0 ? null : grossProfit / cost;
+    const grossMarginPct = price === 0 ? 0 : cost === 0 ? 1 : grossProfit / price;
+    return {
+      markupPct: markupPct2,
+      grossMarginPct,
+      grossProfit,
+      belowMarkupFloor: markupPct2 !== null && markupPct2 < marginFloor
+    };
+  }
   function calculate(inputs, config2) {
-    const cost = computeCost(inputs, config2);
+    const prepared = prepareInputs(inputs, config2);
+    const component = prepared.quoteMode === "component";
+    const tariff = prepared.tariff && config2.presets?.[prepared.tariff];
+    const publishedPackage = !!tariff?.anchor && !prepared.noManagement && !prepared.noMonthly;
+    const cost = computeCost(prepared, config2);
     const price = computePrice(cost, config2);
     const setupEmpty = price.setup === 0;
-    const flooredSetup = setupEmpty ? price.setup : Math.max(price.setup, config2.setupMin);
-    const setupMinApplied = flooredSetup > price.setup;
-    const setupMinAdjustment = flooredSetup - price.setup;
+    const setupFloor = component || publishedPackage ? config2.componentMin || 0 : config2.setupMin;
+    const flooredSetup = setupEmpty ? price.setup : Math.max(price.setup, setupFloor);
+    const setupMinApplied = !component && !publishedPackage && flooredSetup > price.setup;
+    const setupMinAdjustment = setupMinApplied ? flooredSetup - price.setup : 0;
+    const componentMinApplied = (component || publishedPackage) && flooredSetup > price.setup;
+    const componentMinAdjustment = componentMinApplied ? flooredSetup - price.setup : 0;
     price.setup = flooredSetup;
-    const noMonthly = !!inputs.noMonthly;
+    const noMonthly = !!prepared.noMonthly;
     const monthlyEmpty = price.monthly === 0;
-    const flooredMonthly = noMonthly || monthlyEmpty ? price.monthly : Math.max(price.monthly, config2.minMonthly);
-    const minMonthlyApplied = !noMonthly && flooredMonthly > price.monthly;
-    const minMonthlyAdjustment = flooredMonthly - price.monthly;
+    let flooredMonthly = noMonthly || monthlyEmpty || component ? price.monthly : Math.max(price.monthly, config2.minMonthly);
+    let monthlyMinimumLabels;
+    let monthlyPackageAmount;
+    if (publishedPackage && !monthlyEmpty) {
+      const baseKeys = /* @__PURE__ */ new Set(["management"]);
+      for (const [key, s] of Object.entries(config2.services || {})) {
+        if (s.control === "toggle" && tariff.inputs[key] && s.on?.monthly) baseKeys.add(s.lineKey || key);
+      }
+      const base = price.lines.filter((l) => l.phase === "monthly" && baseKeys.has(l.key)).reduce((sum, l) => sum + l.price, 0);
+      monthlyMinimumLabels = price.lines.filter((l) => l.phase === "monthly" && baseKeys.has(l.key)).map((l) => l.label);
+      monthlyPackageAmount = Math.max(tariff.anchor.monthly, base);
+      flooredMonthly = price.monthly + Math.max(0, tariff.anchor.monthly - base);
+    }
+    const minMonthlyApplied = !noMonthly && !component && flooredMonthly > price.monthly;
+    const minMonthlyAdjustment = minMonthlyApplied ? flooredMonthly - price.monthly : 0;
     price.monthly = flooredMonthly;
     const margin = {
       setupPct: pct(price.setup, cost.setup),
       monthlyPct: pct(price.monthly, cost.monthly)
     };
+    const economics = {
+      setup: phaseEconomics(price.setup, cost.setup, config2.marginFloor),
+      monthly: phaseEconomics(price.monthly, cost.monthly, config2.marginFloor)
+    };
+    let excludedMonthlyServices = [];
+    if (noMonthly) {
+      const fullPriceLines = computePrice(computeCost({ ...prepared, noMonthly: false }, config2), config2).lines;
+      excludedMonthlyServices = [...new Set(
+        fullPriceLines.filter((l) => l.phase === "monthly" && l.price > 0).map((l) => l.label)
+      )];
+    }
     const guardrails = {
       setupMinApplied,
       setupMinAdjustment,
       minMonthlyApplied,
       minMonthlyAdjustment,
+      componentMode: component,
+      componentMinApplied,
+      componentMinAdjustment,
+      excludedMonthlyServices,
+      monthlyMinimumLabels,
+      monthlyPackageAmount,
       ...checkMarket(price, config2)
     };
     return {
-      inputs,
+      inputs: prepared,
       cost,
       price,
       margin,
+      economics,
       guardrails
     };
   }
 
-  // src/clientView.js
+  // ../Aveasy/core/pricing/src/clientView.js
   var PLATFORM_NOTE = "Оплата Авито (размещение + продвижение) — отдельно, напрямую в Авито. В нашу цену не входит.";
-  var PRELIMINARY_NOTE = "Предварительный расчёт: при большом объёме и количестве факторов итог приблизительный — возможна скидка за объём, точную цену рассчитаем индивидуально.";
+  var PRELIMINARY_NOTE = "Предварительный расчёт: при большом объёме и количестве факторов итог приблизительный — состав и трудоёмкость нужно подтвердить, окончательную цену согласуем индивидуально.";
   function priceOf(result, key) {
     const l = result.price.lines.find((x) => x.key === key);
     return l ? l.price : 0;
@@ -1309,6 +1480,8 @@ body {
       monthly: result.price.monthly,
       setupIsMinimum: result.guardrails.setupMinApplied,
       monthlyIsMinimum: result.guardrails.minMonthlyApplied,
+      monthlyMinimumLabels: result.guardrails.monthlyMinimumLabels,
+      monthlyPackageAmount: result.guardrails.monthlyPackageAmount,
       isPreliminary,
       preliminaryNote: isPreliminary ? PRELIMINARY_NOTE : null,
       breakdown,
@@ -1316,7 +1489,7 @@ body {
     };
   }
 
-  // src/reports.js
+  // ../Aveasy/core/pricing/src/reports.js
   var NUM = new Intl.NumberFormat("ru-RU");
   function fmtNum(n) {
     return NUM.format(n).replace(/[    ]/g, " ");
@@ -1431,7 +1604,7 @@ body {
   }
   function modelParamSpecs(config2) {
     const staticSpecs = [
-      { path: ["targetMargin"], label: "Целевая маржа", kind: "percent", step: 0.05 },
+      { path: ["targetMargin"], label: "Целевая наценка", kind: "percent", step: 0.05 },
       { path: ["rates", "avitolog"], label: "Ставка — авитолог", kind: "rate", step: 5 },
       { path: ["rates", "analyst"], label: "Ставка — аналитик", kind: "rate", step: 10 },
       { path: ["rates", "dev"], label: "Ставка — разработчик", kind: "rate", step: 10 },
@@ -1508,13 +1681,27 @@ body {
       flags.push(`Настройка поднята до минимума ${fmtRub(config2.setupMin)} — по строкам вышло ${fmtRub(result.price.setup - g.setupMinAdjustment)}.`);
     }
     if (g.minMonthlyApplied) {
-      flags.push(`Ведение поднято до минимума ${fmtRub(config2.minMonthly)} — по строкам вышло ${fmtRub(result.price.monthly - g.minMonthlyAdjustment)}.`);
+      flags.push(`Применена базовая стоимость пакета; доплата к строкам ${fmtRub(g.minMonthlyAdjustment)}.`);
     }
     if (g.setupOverCeiling) {
       flags.push(`Настройка выше рыночного потолка ${fmtRub(config2.market.setupCeiling)} — клиенту показываем сумму с пометкой «предварительный расчёт».`);
     }
     if (g.monthlyOverMarket) {
       flags.push(`Ведение выше рыночного потолка ${fmtRub(config2.market.monthlyCeiling)} — клиенту показываем сумму с пометкой «предварительный расчёт».`);
+    }
+    if (g.excludedMonthlyServices && g.excludedMonthlyServices.length) {
+      flags.push(`Разовый режим исключил ежемесячные работы: ${g.excludedMonthlyServices.join(", ")}. Согласуйте состав перед отправкой предложения.`);
+    }
+    flags.push("Экономика расчётная: часы требуют сверки с фактом. Валовая прибыль не равна чистой; налоги, привлечение и накладные расходы отдельно не подтверждены.");
+    for (const phase of ["setup", "monthly"]) {
+      const price = result.price[phase];
+      const cost = result.cost[phase];
+      if (price <= 0 || cost <= 0) continue;
+      const promoPrice = Math.round(price * 0.95);
+      const safeDiscount = Math.max(0, (1 - cost * (1 + config2.marginFloor) / price) * 100);
+      const below = (promoPrice - cost) / cost < config2.marginFloor;
+      flags.push(`${phase === "setup" ? "Разово" : "В месяц"} после промокода 5%: ${fmtRub(promoPrice)}, валовая маржа ${Math.round((promoPrice - cost) / promoPrice * 100)}%. ${below ? "ВНИМАНИЕ: наценка ниже порога." : ""} Предельная суммарная скидка до порога наценки: ${Math.floor(safeDiscount * 10) / 10}%.`);
+      if ((price - cost) / cost < config2.marginFloor) flags.push("ВНИМАНИЕ: текущая цена ниже порога наценки. Уточните состав или цену перед отправкой КП.");
     }
     return {
       title: "Внутренний расчёт",
@@ -1554,7 +1741,8 @@ body {
     const monthlyPackage = [];
     for (const b of view.breakdown) {
       const isSetup = b.setup != null;
-      const atMinimum = isSetup && view.setupIsMinimum || !isSetup && view.monthlyIsMinimum;
+      const inMonthlyMinimum = !view.monthlyMinimumLabels || view.monthlyMinimumLabels.includes(b.label);
+      const atMinimum = isSetup && view.setupIsMinimum || !isSetup && view.monthlyIsMinimum && inMonthlyMinimum;
       if (atMinimum) {
         const entry2 = { label: b.label, detail: b.note || meaningfulDetail(stripQty(b.detail)) };
         (isSetup ? setupPackage : monthlyPackage).push(entry2);
@@ -1579,6 +1767,7 @@ body {
       firstPayment: view.setup + view.monthly,
       setupIsMinimum: view.setupIsMinimum,
       monthlyIsMinimum: view.monthlyIsMinimum,
+      monthlyPackageAmount: view.monthlyPackageAmount || view.monthly,
       setupItems,
       monthlyItems,
       setupPackage,
@@ -1588,13 +1777,14 @@ body {
     };
   }
 
-  // src/tariffFit.js
+  // ../Aveasy/core/pricing/src/tariffFit.js
   function buildTariffFit(result, tariff, config2) {
     if (!tariff || !tariff.anchor) return null;
     const anchorMonthly = tariff.anchor.monthly;
     const calcMonthly = result.price.monthly;
     const costMonthly = result.cost.monthly;
-    const markupAtAnchor = costMonthly === 0 ? null : Math.round((anchorMonthly - costMonthly) / costMonthly * 100);
+    const markupAtAnchorRaw = costMonthly === 0 ? null : (anchorMonthly - costMonthly) / costMonthly;
+    const markupAtAnchor = markupAtAnchorRaw === null ? null : Math.round(markupAtAnchorRaw * 100);
     const marginAtAnchor = anchorMonthly === 0 ? 0 : Math.round((anchorMonthly - costMonthly) / anchorMonthly * 100);
     const delta = calcMonthly - anchorMonthly;
     const within = delta <= 0;
@@ -1609,12 +1799,12 @@ body {
       costMonthly,
       markupAtAnchor,
       marginAtAnchor,
-      belowFloor: markupAtAnchor !== null && markupAtAnchor < config2.marginFloor * 100,
+      belowFloor: markupAtAnchorRaw !== null && markupAtAnchorRaw < config2.marginFloor,
       note
     };
   }
 
-  // src/includes.js
+  // ../Aveasy/core/pricing/src/includes.js
   function collect(services, phase, items, isPackage) {
     for (const entry of items) {
       services.push({
@@ -1659,7 +1849,7 @@ body {
     return { title, services, tariffPoints, totals: totals2, text: toText(title, services, tariffPoints) };
   }
 
-  // src/impacts.js
+  // ../Aveasy/core/pricing/src/impacts.js
   function computeImpacts(config2) {
     const m = 1 + config2.targetMargin;
     const r = config2.roundTo;
@@ -1721,7 +1911,7 @@ body {
     };
   }
 
-  // web/widget.js
+  // ../Aveasy/core/pricing/web/widget.js
   function applyPreset(form, presetInputs, addItemRowFn) {
     const el = form.elements;
     if (el["accounts"]) el["accounts"].value = String(presetInputs.accounts);
@@ -1731,6 +1921,7 @@ body {
     if (el["autoresponder"]) el["autoresponder"].value = presetInputs.autoresponder;
     if (el["analytics"]) el["analytics"].value = presetInputs.analytics;
     if (el["promotionMgmt"]) el["promotionMgmt"].checked = presetInputs.promotionMgmt;
+    if (el["noMonthly"]) el["noMonthly"].checked = !!presetInputs.noMonthly;
     const container = form.querySelector("#items-container");
     if (container && addItemRowFn && presetInputs.items) {
       container.innerHTML = "";
@@ -1766,7 +1957,7 @@ body {
     };
   }
 
-  // web/internal-page/formIO.js
+  // ../Aveasy/core/pricing/web/internal-page/formIO.js
   function nonNegativeInt(raw) {
     return Math.max(0, Math.round(Number(raw) || 0));
   }
@@ -1785,6 +1976,7 @@ body {
     }
     const mgmt = form.elements["managementOn"];
     inputs.noManagement = mgmt ? !mgmt.checked : false;
+    inputs.quoteMode = form.elements["componentOrder"]?.checked ? "component" : void 0;
     const rows = form.querySelectorAll("#items-container .item-row");
     inputs.items = inputs.items.map((item, i) => {
       const field = rows[i] && rows[i].querySelector('input[name="itemNewPerMonth"]');
@@ -1803,9 +1995,10 @@ body {
     }
     const mgmt = form.elements["managementOn"];
     if (mgmt) mgmt.checked = !presetInputs.noManagement;
+    if (form.elements["componentOrder"]) form.elements["componentOrder"].checked = presetInputs.quoteMode === "component";
   }
 
-  // web/internal-page/controls.js
+  // ../Aveasy/core/pricing/web/internal-page/controls.js
   var SCRATCH = {
     items: [{ type: "serial", listings: 50, contentStatus: "none" }],
     accounts: 1,
@@ -1915,9 +2108,6 @@ body {
       });
     }
     function markManual() {
-      if (activeKey === null) return;
-      activeKey = null;
-      renderTariffs();
     }
     function applyTariff(key) {
       const inputs = key ? config2.presets[key].inputs : SCRATCH;
@@ -1955,6 +2145,7 @@ body {
       onChange();
     });
     form.addEventListener("change", () => {
+      if (form.elements["componentOrder"]?.checked) form.elements["managementOn"].checked = false;
       markManual();
       updateHints();
       onChange();
@@ -1967,7 +2158,7 @@ body {
     return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
   }
 
-  // web/internal-page/summary.js
+  // ../Aveasy/core/pricing/web/internal-page/summary.js
   var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function totals(report) {
     const oneOff = report.monthly.price === 0;
@@ -2023,7 +2214,7 @@ body {
     return { render };
   }
 
-  // web/internal-page/rows.js
+  // ../Aveasy/core/pricing/web/internal-page/rows.js
   var esc2 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function mountRows({ root }) {
     const box = root.querySelector("#avz-rows");
@@ -2052,7 +2243,7 @@ body {
     return { render };
   }
 
-  // src/configOverrides.js
+  // ../Aveasy/core/pricing/src/configOverrides.js
   function pathKey(path) {
     return path.join(".");
   }
@@ -2076,7 +2267,7 @@ body {
     return liveConfig;
   }
 
-  // web/internal-page/modelPanel.js
+  // ../Aveasy/core/pricing/web/internal-page/modelPanel.js
   var esc3 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   var toField = (spec) => spec.kind === "percent" ? Math.round(spec.raw * 1e3) / 10 : spec.raw;
   var fromField = (spec, value) => spec.kind === "percent" ? value / 100 : value;
@@ -2147,7 +2338,7 @@ body {
     return { render, isChanged: () => Object.keys(overrides).length > 0 };
   }
 
-  // web/internal-page/png.js
+  // ../Aveasy/core/pricing/web/internal-page/png.js
   var SCALE = 2;
   var WIDTH = 1080;
   var PAD = 48;
@@ -2485,11 +2676,11 @@ body {
     return paint(blocks);
   }
   function renderQuotePng(quote, { stamp = stampNow(), site = "aveasy.ru" } = {}) {
-    const listBlock = (title, items, packageItems, isMinimum) => (ctx, x, y, w, draw) => {
+    const listBlock = (title, items, packageItems, isMinimum, packageAmount) => (ctx, x, y, w, draw) => {
       if (!items.length && !packageItems.length) return 0;
       let h = sectionTitle(ctx, title, x, y, w, draw);
       if (isMinimum && packageItems.length) {
-        h += text(ctx, "Базовый пакет — входит:", x, y + h, { weight: 700, size: 15, color: T.ink, width: w }, draw);
+        h += text(ctx, `Базовый пакет${packageAmount ? " " + fmtRub(packageAmount) : ""} — входит:`, x, y + h, { weight: 700, size: 15, color: T.ink, width: w }, draw);
         h += 8;
         for (const item of packageItems) {
           const line = item.detail ? `✓ ${item.label} — ${item.detail}` : `✓ ${item.label}`;
@@ -2525,7 +2716,7 @@ body {
       ], x, y, w, draw),
       spacer(24),
       listBlock("Разовая настройка", quote.setupItems, quote.setupPackage, quote.setupIsMinimum),
-      listBlock("Ежемесячное ведение", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum),
+      listBlock("Ежемесячное ведение", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum, quote.monthlyPackageAmount),
       (ctx, x, y, w, draw) => quote.isPreliminary ? warnBox(ctx, quote.notes.filter((n) => /предварительн/i.test(n)), x, y, w, draw) + 16 : 0,
       (ctx, x, y, w, draw) => {
         let h = 0;
@@ -2576,24 +2767,37 @@ body {
     return `${prefix}-${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}.png`;
   }
 
-  // web/internal-page/app.js
+  // ../Aveasy/core/pricing/web/internal-page/app.js
   function mountApp({ root, config: config2, baseConfig: baseConfig2 }) {
     const form = root.querySelector("#ave-form");
     if (!form) return null;
     function currentResult() {
-      return calculate(readInternalInputs(form, config2), config2);
+      const inputs = readInternalInputs(form, config2);
+      const key = controls.activeTariffKey();
+      if (key && !inputs.noMonthly && !inputs.noManagement) inputs.tariff = key;
+      return calculate(inputs, config2);
     }
     const controls = mountControls({ root, config: config2, onChange: () => refresh() });
     const summary = mountSummary({ root });
     const rows = mountRows({ root });
     const modelPanel = mountModelPanel({ root, config: config2, baseConfig: baseConfig2, onApply: () => refresh() });
-    let last = { report: null, quote: null, includes: null, fit: null };
+    let last = { report: null, quote: null, includes: null, fit: null, valid: false };
     function currentTariff() {
+      if (!form.elements["managementOn"].checked || form.elements["noMonthly"].checked) return null;
       const key = controls.activeTariffKey();
       return key ? config2.presets[key] : null;
     }
     function refresh() {
-      const result = currentResult();
+      let result;
+      try {
+        result = currentResult();
+      } catch (e) {
+        last.valid = false;
+        root.querySelector("#avz-summary").textContent = e.message;
+        root.querySelector("#avz-actions").hidden = true;
+        return;
+      }
+      root.querySelector("#avz-actions").hidden = false;
       const tariff = currentTariff();
       last = {
         report: buildInternalReport(result, config2, { baseConfig: baseConfig2 }),
@@ -2601,6 +2805,7 @@ body {
         includes: buildIncludes(result, config2, tariff),
         fit: buildTariffFit(result, tariff, config2)
       };
+      last.valid = result.guardrails.excludedMonthlyServices.length === 0 && !result.economics.setup.belowMarkupFloor && !result.economics.monthly.belowMarkupFloor;
       summary.render({
         report: last.report,
         fit: last.fit,
@@ -2609,6 +2814,9 @@ body {
       });
       rows.render(last.report);
       modelPanel.render(last.report);
+      for (const btn of root.querySelectorAll('[data-act$="quote"], [data-act="copy-includes"]')) {
+        btn.disabled = !last.valid;
+      }
     }
     const statusBox = root.querySelector("#avz-status");
     function status(message, kind = "ok") {
@@ -2626,6 +2834,10 @@ body {
     }
     root.addEventListener("click", async (e) => {
       if (!e.target.closest('[data-act="copy-includes"]')) return;
+      if (!last.valid) {
+        status("Сначала устраните предупреждения о составе и наценке.", "warn");
+        return;
+      }
       try {
         await navigator.clipboard.writeText(last.includes.text);
         status("Состав скопирован — вставьте в чат (Ctrl+V)");
@@ -2638,6 +2850,10 @@ body {
       const btn = e.target.closest("[data-act]");
       if (!btn) return;
       const act = btn.getAttribute("data-act");
+      if (act.endsWith("quote") && !last.valid) {
+        status("Сначала устраните предупреждения о составе и наценке.", "warn");
+        return;
+      }
       if (act === "print") {
         window.print();
         return;
@@ -2673,7 +2889,7 @@ body {
     return api;
   }
 
-  // web/internal-page/entry.js
+  // ../Aveasy/core/pricing/web/internal-page/entry.js
   var baseConfig = JSON.parse(JSON.stringify(config));
   function init() {
     mountApp({ root: document, config, baseConfig });
