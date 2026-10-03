@@ -6,612 +6,58 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Калькулятор Aveasy — внутренний расчёт</title>
 <link rel="icon" href="data:,">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Внутренняя страница калькулятора — компоновка «Пульт».
-   Сценарий: менеджер за ноутбуком говорит с клиентом по телефону. Значит крупные цифры,
-   ручки и итог одновременно на экране, ничего важного не прячем под клики. */
-
-:root {
-  --ink: #0a1828;
-  --muted: #5a6b80;
-  --line: rgba(10, 24, 40, .14);
-  --line-soft: rgba(10, 24, 40, .07);
-  --blue: #0055cc;
-  --bg: #f0f3f8;
-  --card: #ffffff;
-  --good: #0a7d3f;
-  --good-bg: #eefaf2;
-  --warn: #7a4b00;
-  --warn-bg: #fff6e0;
-  --bad: #b3261e;
-  --face: 'Manrope', 'Segoe UI', Roboto, Arial, sans-serif;
-  --display: 'Unbounded', var(--face);
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 500 15px/1.45 var(--face);
-}
-
-.avz-banner {
-  background: #0a1828;
-  color: #fff;
-  font: 700 13px/1.4 var(--face);
-  padding: 10px 16px;
-  text-align: center;
-  letter-spacing: .02em;
-}
-.avz-banner b { color: #00d4ff; }
-
-/* --- Шапка: тарифы + вход в параметры модели --- */
-
-.avz-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 14px 20px;
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-
-.avz-tariffs {
-  display: flex;
-  gap: 10px;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-}
-
-.avz-tariff {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 160px;
-  padding: 10px 14px;
-  background: #fff;
-  border: 2px solid var(--line);
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: left;
-  font-family: var(--face);
-  transition: border-color .12s, background .12s;
-}
-.avz-tariff:hover { border-color: rgba(0, 85, 204, .45); }
-.avz-tariff-on {
-  border-color: var(--blue);
-  background: #eef4ff;
-}
-.avz-tariff-name { font: 800 16px/1.2 var(--display); }
-.avz-tariff-price { font-size: 12.5px; color: var(--muted); }
-.avz-tariff-on .avz-tariff-price { color: var(--blue); }
-
-.avz-model-btn {
-  padding: 10px 14px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  cursor: pointer;
-  font: 600 13.5px var(--face);
-  color: var(--ink);
-  white-space: nowrap;
-}
-.avz-model-btn:hover { border-color: var(--blue); color: var(--blue); }
-.avz-model-dot { color: var(--bad); font-size: 11px; vertical-align: 2px; }
-
-/* --- Две колонки --- */
-
-.avz-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
-  padding: 18px 20px;
-  align-items: start;
-}
-
-@media (min-width: 1100px) {
-  .avz-main { grid-template-columns: minmax(0, 1fr) 430px; }
-}
-
-/* --- Левая колонка: ручки --- */
-
-.avz-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.avz-field-group {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 10px 14px;
-}
-
-.avz-group-title {
-  grid-column: 1 / -1;
-  font: 800 12px/1 var(--face);
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 2px;
-}
-
-.avz-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.avz-field-wide { grid-column: 1 / -1; }
-
-.avz-field input,
-.avz-field select {
-  font: 600 15px var(--face);
-  color: var(--ink);
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
-  min-height: 40px;
-}
-.avz-field input:focus,
-.avz-field select:focus { outline: 2px solid rgba(0, 85, 204, .35); outline-offset: 1px; }
-
-/* Пояснение под полем: что выбранный вариант значит на практике. */
-.avz-hint {
-  grid-column: 1 / -1;
-  margin-top: -4px;
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--muted);
-}
-
-/* Пояснение под полем: чем именно отличаются варианты и что это меняет в работе.
-   Менеджер зачитывает это клиенту, поэтому текст живёт в прайсе рядом с ценами. */
-.avz-hint {
-  grid-column: 1 / -1;
-  margin-top: -4px;
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--muted);
-}
-.avz-hint-warn {
-  color: var(--warn);
-  background: var(--warn-bg);
-  border-radius: 8px;
-  padding: 7px 10px;
-  margin-top: 0;
-}
-
-.avz-toggle {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 14px;
-  cursor: pointer;
-}
-.avz-toggle input { width: 19px; height: 19px; accent-color: var(--blue); }
-
-/* Строка товара: количество — главная ручка разговора, поэтому крупнее прочего */
-
-#items-container { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
-
-.item-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.avz-qty {
-  width: 120px;
-  font: 800 23px var(--face);
-  text-align: center;
-  padding: 6px 8px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--ink);
-}
-.avz-qty:focus { outline: 2px solid rgba(0, 85, 204, .35); border-color: var(--blue); }
-
-.item-row select {
-  flex: 1 1 150px;
-  min-width: 140px;
-  font: 600 14px var(--face);
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
-  color: var(--ink);
-  min-height: 40px;
-}
-
-.avz-item-remove {
-  border: none;
-  background: none;
-  color: var(--bad);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px 8px;
-}
-
-.avz-add-item {
-  grid-column: 1 / -1;
-  justify-self: start;
-  border: 1px dashed var(--line);
-  background: none;
-  color: var(--muted);
-  border-radius: 9px;
-  padding: 7px 12px;
-  cursor: pointer;
-  font: 600 13px var(--face);
-}
-.avz-add-item:hover { color: var(--blue); border-color: var(--blue); }
-
-/* --- Правая колонка: итог, сверка, что входит --- */
-
-.avz-summary {
-  position: sticky;
-  top: 88px;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  /* Влезает в первый экран и до прокрутки (когда над колонкой ещё виден баннер),
-     и после — когда шапка прилипла. Что не поместилось, скроллится внутри колонки. */
-  max-height: calc(100vh - 165px);
-  overflow-y: auto;
-}
-
-.avz-cards {
-  display: grid;
-  gap: 10px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-}
-
-.avz-card + .avz-card { border-top: 1px solid var(--line-soft); padding-top: 10px; }
-.avz-card-label { font-size: 12.5px; color: var(--muted); }
-.avz-card-value { font: 800 31px/1.1 var(--display); letter-spacing: -.01em; }
-.avz-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.avz-card-strong .avz-card-value { color: var(--blue); }
-
-.avz-fit {
-  background: var(--card);
-  border: 2px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 16px;
-}
-.avz-fit-ok { border-color: rgba(10, 125, 63, .5); background: var(--good-bg); }
-.avz-fit-over { border-color: rgba(180, 120, 0, .45); background: var(--warn-bg); }
-.avz-fit-none { color: var(--muted); font-size: 13.5px; }
-.avz-fit-head { font: 800 15px var(--face); }
-.avz-fit-note { font-size: 13.5px; margin-top: 3px; }
-.avz-fit-margin { font-size: 13px; color: var(--muted); margin-top: 6px; }
-.avz-fit-low { color: var(--bad); font-weight: 700; }
-
-.avz-warn {
-  background: var(--warn-bg);
-  border: 1px solid rgba(180, 120, 0, .35);
-  color: var(--warn);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 13px;
-  display: grid;
-  gap: 5px;
-}
-
-.avz-inc {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 16px 14px;
-}
-.avz-inc-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  font: 800 15px var(--face);
-}
-.avz-inc-copy {
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 8px;
-  padding: 4px 9px;
-  font: 600 12px var(--face);
-  color: var(--muted);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.avz-inc-copy:hover { color: var(--blue); border-color: var(--blue); }
-.avz-inc-sub {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font: 800 11px var(--face);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 10px 0 4px;
-}
-.avz-inc-sub b { color: var(--ink); white-space: nowrap; }
-.avz-inc-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
-.avz-inc-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13.5px;
-  padding-left: 15px;
-  position: relative;
-}
-.avz-inc-list li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: var(--good);
-  font-size: 12px;
-}
-.avz-inc-list b { white-space: nowrap; }
-.avz-inc-list i {
-  display: block;
-  font-style: normal;
-  font-size: 12px;
-  color: var(--muted);
-}
-.avz-inc-points li::before { content: '•'; color: var(--blue); }
-
-/* --- Нижняя секция: выгрузки и разбор --- */
-
-.avz-bottom { padding: 0 20px 26px; }
-
-.avz-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-
-.avz-btn {
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--ink);
-  border-radius: 10px;
-  padding: 9px 14px;
-  font: 700 13.5px var(--face);
-  cursor: pointer;
-}
-.avz-btn:hover { border-color: var(--blue); color: var(--blue); }
-.avz-btn-main { background: var(--ink); color: #fff; border-color: var(--ink); }
-.avz-btn-main:hover { background: #16304d; color: #fff; }
-.avz-btn-client { background: var(--blue); color: #fff; border-color: var(--blue); }
-.avz-btn-client:hover { color: #fff; opacity: .9; }
-
-.avz-status {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  border-radius: 9px;
-  font-size: 13px;
-  background: var(--good-bg);
-  color: var(--good);
-}
-.avz-status-warn { background: var(--warn-bg); color: var(--warn); }
-
-.avz-rows-box {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 16px;
-}
-.avz-rows-box > summary {
-  cursor: pointer;
-  font: 700 14px var(--face);
-  color: var(--muted);
-}
-.avz-rows-box[open] > summary { color: var(--ink); margin-bottom: 10px; }
-
-#avz-rows { overflow-x: auto; }
-
-.avz-params {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 5px 16px;
-  margin-bottom: 12px;
-}
-.avz-param {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12.5px;
-  color: var(--muted);
-  border-bottom: 1px dotted var(--line-soft);
-  padding: 3px 0;
-}
-.avz-param b { color: var(--ink); text-align: right; }
-
-.avz-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
-.avz-table th {
-  text-align: left;
-  font: 800 11.5px var(--face);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
-}
-.avz-table td { padding: 7px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-.avz-num { text-align: right; white-space: nowrap; }
-.avz-num-price { font-weight: 700; }
-.avz-num-low { color: var(--bad); font-weight: 700; }
-.avz-row-group td {
-  font: 800 11.5px var(--face);
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-top: 14px;
-  border-bottom: none;
-}
-.avz-row-label { display: block; font-weight: 600; }
-.avz-row-detail { display: block; font-size: 12px; color: var(--muted); }
-
-/* --- Боковая панель «что если» --- */
-
-.avz-model {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100vh;
-  width: min(430px, 92vw);
-  background: var(--card);
-  border-left: 1px solid var(--line);
-  box-shadow: -18px 0 40px rgba(10, 24, 40, .16);
-  padding: 16px 18px 40px;
-  overflow-y: auto;
-  z-index: 40;
-}
-.avz-model[hidden] { display: none; }
-
-.avz-model-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 17px;
-}
-.avz-model-close {
-  border: none;
-  background: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 4px 6px;
-}
-.avz-model-note { font-size: 12.5px; color: var(--muted); margin: 6px 0 10px; }
-.avz-model-reset {
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 9px;
-  padding: 7px 12px;
-  font: 600 13px var(--face);
-  cursor: pointer;
-  margin-bottom: 12px;
-}
-.avz-model-fields { display: grid; gap: 9px; }
-
-.avz-mfield { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
-.avz-mfield-input { display: flex; align-items: center; gap: 7px; }
-.avz-mfield-input input {
-  flex: 1 1 auto;
-  min-width: 0;
-  font: 600 14px var(--face);
-  padding: 7px 9px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--ink);
-}
-.avz-mfield-input i { font-style: normal; font-size: 12px; color: var(--muted); min-width: 58px; }
-.avz-mfield-changed .avz-mfield-input input { border-color: var(--blue); background: #eef4ff; }
-.avz-mfield-base { font-size: 11.5px; color: var(--blue); }
-
-/* --- Печать --- */
-
-@media print {
-  .avz-banner, .avz-top, .avz-actions, .avz-model, .avz-status, .avz-add-item { display: none !important; }
-  body { background: #fff; }
-  .avz-main { grid-template-columns: 1fr; padding: 0; }
-  .avz-summary { position: static; max-height: none; overflow: visible; }
-  .avz-rows-box { border: none; padding: 0; }
-  .avz-table { min-width: 0; }
-}
+:root{--bg:#f5f3ef;--paper:#fff;--ink:#292720;--muted:#6e6a60;--line:#dfdcd4;--soft:#eeeae2;--accent:#d46a3b;--accent-dark:#a84924;--accent-pale:#fbede4;--good:#326b4d;--bad:#a84338;--warn-bg:#fff4e7;--face:Inter,"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--face)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}a,button,summary,input,select{outline-offset:3px}:focus-visible{outline:3px solid var(--accent)}[hidden]{display:none!important}
+.avz-top{height:74px;padding:0 clamp(16px,3vw,48px);background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:20px}.avz-brand,.avz-header-actions{display:flex;align-items:center;gap:14px}.avz-brand{font-size:18px;font-weight:800;letter-spacing:.1em;white-space:nowrap}.avz-brand-mark{display:grid;place-items:center;width:34px;height:34px;background:var(--accent);color:#fff;border-radius:9px;letter-spacing:0}.avz-brand-divider{height:23px;width:1px;background:var(--line);margin:0 4px}.avz-brand-title{font-size:15px;font-weight:600;letter-spacing:0}.avz-private{font-size:11px;letter-spacing:.04em;color:var(--accent-dark);background:var(--accent-pale);border:1px solid #efd1c1;border-radius:999px;padding:3px 8px}.avz-header-actions{justify-content:flex-end}.avz-save-state{font-size:12px;color:var(--good);min-width:108px;text-align:right}.avz-text-btn,.avz-model-btn{min-height:44px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}.avz-text-btn{border-color:transparent;color:var(--muted)}.avz-text-btn:hover,.avz-model-btn:hover{color:var(--accent-dark);border-color:var(--accent)}.avz-model-dot{font-size:10px;color:var(--accent)}
+.avz-shell{max-width:1510px;margin:0 auto;padding:38px clamp(16px,3vw,48px) 64px}.avz-intro{max-width:790px;margin:0 0 30px}.avz-eyebrow{text-transform:uppercase;letter-spacing:.13em;color:var(--accent-dark);font-size:11px;font-weight:800}.avz-intro h1{font-size:clamp(28px,3.2vw,44px);letter-spacing:-.05em;line-height:1.12;margin:9px 0 11px;font-weight:750}.avz-intro p,.avz-section-heading p,.avz-proposal-head p{color:var(--muted);margin:0}.avz-main{display:grid;grid-template-columns:minmax(0,3fr) minmax(350px,2fr);gap:24px;align-items:start}.avz-controls{display:grid;gap:16px;min-width:0}.avz-field-group,.avz-result-card,.avz-economy-card,.avz-proposal,.avz-rows-box,.avz-export-box{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(34,26,15,.025)}.avz-field-group{padding:24px;min-width:0}.avz-section-heading{display:flex;gap:15px;margin:0 0 22px;align-items:flex-start}.avz-step{width:31px;height:31px;flex:0 0 31px;border:1px solid #edcbb9;background:var(--accent-pale);border-radius:9px;color:var(--accent-dark);display:grid;place-items:center;font-size:11px;font-weight:800}.avz-section-heading h2,.avz-result-card h2,.avz-economy-card h2,.avz-proposal h2{margin:0 0 3px;font-size:21px;line-height:1.25;letter-spacing:-.025em}.avz-section-heading p{font-size:13px;line-height:1.5}
+.avz-tariffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.avz-tariff{min-height:91px;background:#fff;text-align:left;display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:12px;padding:13px;transition:border-color .15s,background .15s,box-shadow .15s}.avz-tariff:hover{border-color:var(--accent)}.avz-tariff-on{background:var(--accent-pale);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.avz-tariff-name{font-size:15px;font-weight:750;line-height:1.2}.avz-tariff-price{font-size:11px;line-height:1.35;color:var(--muted)}.avz-tariff-on .avz-tariff-price{color:#80523b}
+#items-container{display:grid;gap:11px}.item-row{border:1px solid var(--line);background:#fcfbf9;border-radius:12px;padding:15px}.avz-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.avz-item-head b{font-size:14px}.avz-item-remove{min-height:38px;border:0;background:transparent;color:var(--bad);font-size:12px;font-weight:700;padding:6px 10px}.avz-item-remove:hover{text-decoration:underline}.avz-item-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.avz-field{display:flex;flex-direction:column;gap:6px;color:#554f46;font-size:12px;font-weight:700;min-width:0}.avz-field input,.avz-field select,.avz-mfield-input input{width:100%;min-width:0;min-height:46px;border:1px solid #cfcac1;border-radius:9px;background:#fff;color:var(--ink);padding:10px 12px;font-size:15px;font-weight:600}.avz-field select{padding-right:24px}.avz-qty{font-size:18px!important}.avz-item-note{font-size:11px;color:var(--muted);margin:11px 0 0;line-height:1.4}.avz-add-item{min-height:44px;border:1px dashed #d8b7a3;background:#fffaf6;color:var(--accent-dark);font-size:13px;font-weight:700;padding:9px 14px;border-radius:9px;margin-top:10px}.avz-add-item:hover{border-style:solid;background:var(--accent-pale)}.avz-details{margin-top:18px;border-top:1px solid var(--soft);padding-top:14px}.avz-details summary,.avz-rows-box summary,.avz-export-box summary,.avz-info-flags summary,.avz-fit-details summary{cursor:pointer;font-size:13px;font-weight:750;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}.avz-details summary::-webkit-details-marker,.avz-rows-box summary::-webkit-details-marker,.avz-export-box summary::-webkit-details-marker,.avz-info-flags summary::-webkit-details-marker,.avz-fit-details summary::-webkit-details-marker{display:none}.avz-details summary::after,.avz-rows-box summary::after,.avz-export-box summary::after,.avz-info-flags summary::after,.avz-fit-details summary::after{content:'⌄';font-size:20px;font-weight:400;color:var(--muted)}details[open]>summary::after{transform:rotate(180deg)}#avz-geo-summary{margin-left:auto;font-size:11px;font-weight:500;color:var(--muted);text-align:right}.avz-details-body{display:grid;gap:13px;padding:12px 0 3px}.avz-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.avz-hint{display:block;color:var(--muted);font-size:12px;line-height:1.5;margin-top:7px}.avz-hint-warn{background:var(--warn-bg);color:#805226;border-radius:8px;padding:10px}.avz-service-list{display:grid;gap:9px;margin-top:15px}.avz-service{display:flex;gap:12px;min-height:64px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:#fcfbf9;cursor:pointer;align-items:flex-start}.avz-service:hover{border-color:#d6a287}.avz-service:has(input:checked){border-color:#dba989;background:#fffaf5}.avz-service:has(input:disabled){cursor:default}.avz-service input{width:20px;height:20px;flex:0 0 20px;margin:1px 0 0;accent-color:var(--accent)}.avz-service-copy{display:grid;gap:3px;min-width:0}.avz-service-copy b{font-size:13px;line-height:1.35}.avz-service-copy small,.avz-service-copy em,.avz-service-description{font-size:11px;color:var(--muted);font-style:normal;font-weight:400;line-height:1.45}.avz-service-copy em{color:var(--accent-dark);font-weight:700}.avz-included{display:inline-block;font-size:10px;color:var(--good);background:#e8f3ea;padding:2px 6px;border-radius:99px;margin-left:7px}.avz-select-service{margin-top:6px}.avz-select-service>span{font-size:13px}.avz-service-main{margin-bottom:7px}.avz-details-compact{margin-top:15px}.avz-details-compact .avz-details-body{padding-top:8px}
+.avz-summary{position:sticky;top:22px;display:grid;gap:12px;max-height:calc(100vh - 44px);overflow-y:auto;scrollbar-width:thin}.avz-result-card,.avz-economy-card{padding:22px}.avz-result-card h2,.avz-economy-card h2{margin:5px 0 16px}.avz-total{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-top:1px solid var(--soft);padding:14px 0;font-size:13px;color:var(--muted)}.avz-total strong{font-size:22px;white-space:nowrap;color:var(--ink);line-height:1.1}.avz-total-primary{border-top:0;padding-top:0}.avz-total-primary strong{font-size:31px;color:var(--accent-dark);letter-spacing:-.05em}.avz-first-payment{background:#302d28;color:#fff;border-radius:11px;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.avz-first-payment span{font-size:13px;font-weight:700}.avz-first-payment small{display:block;opacity:.72;font-size:11px;font-weight:400}.avz-first-payment strong{font-size:22px;white-space:nowrap}.avz-economy-scroll{overflow-x:auto}.avz-economy-card table{border-collapse:collapse;width:100%;font-size:11px}.avz-economy-card th,.avz-economy-card td{text-align:right;white-space:nowrap;padding:10px 5px;border-bottom:1px solid var(--soft)}.avz-economy-card th:first-child,.avz-economy-card td:first-child{text-align:left;padding-left:0}.avz-economy-card thead th{font-size:10px;white-space:normal;line-height:1.3;color:var(--muted);font-weight:600}.avz-economy-card tbody th{font-size:11px}.avz-profit{font-weight:800;color:var(--good)}.avz-economy-note{font-size:11px;color:var(--muted);line-height:1.5;margin:12px 0 0}.avz-alert{padding:15px 18px;border-radius:12px;font-size:13px;line-height:1.5}.avz-alert p{margin:6px 0 0}.avz-alert-critical{background:#fff0eb;border:1px solid #e7b1a7;color:#8a302b}.avz-info-flags,.avz-fit-details{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:8px 14px;color:var(--muted)}.avz-info-flags summary,.avz-fit-details summary{color:var(--ink)}.avz-info-flags summary span{margin-left:auto;background:var(--soft);border-radius:99px;padding:1px 7px;font-size:11px}.avz-info-flags ul{padding-left:19px;font-size:11px;margin:8px 0}.avz-info-flags li+li{margin-top:6px}.avz-fit-details p{font-size:11px;line-height:1.5}
+.avz-proposal{margin-top:28px;padding:28px}.avz-proposal-head{margin-bottom:20px}.avz-proposal-head h2{font-size:25px;margin:4px 0}.avz-proposal-head p{font-size:13px}.avz-quote-paper{border:1px solid var(--line);border-radius:12px;background:#fff;padding:22px;max-width:760px}.avz-quote-brand{font-size:16px;font-weight:900;letter-spacing:.1em}.avz-quote-brand span{display:block;font-size:11px;letter-spacing:0;font-weight:500;color:var(--muted);margin-top:2px}.avz-quote-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:22px 0}.avz-quote-totals>div{background:#f7f5f1;padding:12px;border-radius:8px}.avz-quote-totals small,.avz-quote-totals strong{display:block}.avz-quote-totals small{font-size:11px;color:var(--muted)}.avz-quote-totals strong{font-size:19px;margin-top:2px}.avz-quote-totals .avz-quote-first{background:var(--accent-pale)}.avz-quote-first strong{color:var(--accent-dark)}.avz-quote-lines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:25px}.avz-quote-phase h3{font-size:14px;margin:0 0 8px}.avz-quote-phase h3 span{font-size:10px;color:var(--good);margin-left:9px}.avz-quote-phase ul{list-style:none;margin:0;padding:0}.avz-quote-phase li{display:flex;justify-content:space-between;gap:9px;border-top:1px solid var(--soft);padding:8px 0;font-size:12px}.avz-quote-phase li small{display:block;color:var(--muted);font-size:10px}.avz-quote-phase li b,.avz-quote-phase li em{text-align:right;white-space:nowrap;font-size:11px;font-style:normal}.avz-quote-phase li em{color:var(--good)}.avz-quote-notes{border-top:1px solid var(--soft);margin-top:17px;padding-top:9px;font-size:10px;color:var(--muted)}.avz-quote-notes p{margin:5px 0}.avz-quote-empty{border:1px dashed #dcb0a8;background:#fff7f4;color:var(--bad);border-radius:10px;padding:22px;font-size:13px}.avz-actions,.avz-internal-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.avz-btn{min-height:44px;padding:10px 15px;border:1px solid var(--line);background:#fff;border-radius:9px;color:var(--ink);font-size:13px;font-weight:750}.avz-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-dark)}.avz-btn-client{background:var(--accent);border-color:var(--accent);color:#fff}.avz-btn-client:hover:not(:disabled){background:var(--accent-dark);color:#fff}.avz-status{margin-top:13px;padding:10px 12px;border-radius:8px;background:#e8f3ea;color:var(--good);font-size:12px}.avz-status-warn{background:var(--warn-bg);color:#805226}.avz-bottom{margin-top:16px;display:grid;gap:10px}.avz-rows-box,.avz-export-box{padding:10px 20px}#avz-rows{overflow-x:auto}.avz-params{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 15px;margin:12px 0}.avz-param{display:flex;justify-content:space-between;gap:9px;border-bottom:1px solid var(--soft);font-size:11px;padding:4px}.avz-param span{color:var(--muted)}.avz-param b{text-align:right}.avz-table{border-collapse:collapse;width:100%;min-width:620px;font-size:12px}.avz-table th,.avz-table td{border-bottom:1px solid var(--soft);padding:8px;text-align:left}.avz-table th{color:var(--muted);font-size:11px}.avz-table .avz-num{text-align:right;white-space:nowrap}.avz-num-price{font-weight:750}.avz-num-low{color:var(--bad);font-weight:750}.avz-row-group td{color:var(--accent-dark);font-weight:800;padding-top:15px}.avz-row-label,.avz-row-detail{display:block}.avz-row-detail{font-size:10px;color:var(--muted)}
+.avz-model{position:fixed;right:0;top:0;height:100vh;width:min(450px,100vw);background:var(--paper);box-shadow:-15px 0 45px rgba(32,26,19,.16);z-index:50;overflow:auto;padding:23px}.avz-model-head{display:flex;justify-content:space-between;align-items:center;font-size:19px}.avz-model-close,.avz-model-reset{min-height:44px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--ink)}.avz-model-close{width:44px;font-size:20px}.avz-model-note{font-size:12px;color:var(--muted)}.avz-model-fields{display:grid;gap:11px;margin-top:15px}.avz-mfield{display:grid;gap:5px;font-size:12px;color:var(--muted)}.avz-mfield-input{display:flex;align-items:center;gap:8px}.avz-mfield-input input{flex:1}.avz-mfield-input i{font-style:normal;min-width:50px}.avz-mfield-changed input{border-color:var(--accent)}.avz-mfield-base{color:var(--accent-dark);font-size:11px}
+/* Keep narrow grids constrained by the viewport, including large quote totals. */
+.avz-btn-client{background:var(--accent-dark);border-color:var(--accent-dark)}
+.avz-scenario-note{margin:14px 0 0;line-height:1.55}
+.avz-summary,.avz-field-group,.avz-result-card,.avz-economy-card{min-width:0}
+.avz-economy-card table{font-size:13px}
+.avz-economy-card tbody th{font-size:12px;white-space:normal}
+.avz-economy-card thead th{font-size:12px}
+.avz-rows-box{overflow-x:auto}
+@media(max-width:1100px){.avz-main{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr)}.avz-tariffs{grid-template-columns:repeat(2,minmax(0,1fr))}.avz-economy-card{padding:17px}}
+@media(max-width:850px){.avz-top{height:auto;min-height:69px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.avz-save-state{display:none}.avz-main{grid-template-columns:1fr}.avz-summary{position:static;max-height:none;overflow:visible;grid-row:1}.avz-controls{grid-row:2}.avz-economy-card table{font-size:12px}.avz-shell{padding-top:27px}}
+@media(max-width:580px){.avz-brand{gap:8px;font-size:15px}.avz-brand-mark{width:30px;height:30px}.avz-brand-title{font-size:12px}.avz-brand-divider,.avz-private{display:none}.avz-header-actions{width:100%;justify-content:space-between}.avz-intro h1{font-size:30px}.avz-field-group,.avz-proposal{padding:17px}.avz-tariffs{grid-template-columns:repeat(2,minmax(0,1fr))}.avz-tariff{min-height:76px;padding:11px}.avz-tariff-name{font-size:13px}.avz-item-fields{grid-template-columns:1fr}.avz-quote-lines{grid-template-columns:1fr}.avz-quote-totals{grid-template-columns:1fr 1fr}.avz-quote-first{grid-column:1/-1}.avz-quote-paper{padding:15px}.avz-proposal-head h2{font-size:22px}.avz-btn{width:100%}.avz-params{grid-template-columns:1fr}}
+@media(max-width:360px){.avz-brand-title{font-size:11px}.avz-tariffs{grid-template-columns:1fr}.avz-tariff{min-height:65px}.avz-result-card,.avz-economy-card{padding:15px}.avz-total-primary strong{font-size:25px}.avz-first-payment strong{font-size:19px}}
+@media print{body{background:#fff}.avz-top,.avz-intro,.avz-main,.avz-actions,.avz-status,.avz-bottom,.avz-model,.avz-proposal-head{display:none!important}.avz-shell{padding:0;max-width:none}.avz-proposal{padding:0;border:0;box-shadow:none;margin:0}.avz-quote-paper{border:0;max-width:none;padding:0}.avz-quote-notes{color:#555}@page{margin:18mm}}
+.avz-service-price{font-style:normal;color:var(--accent-dark);font-size:11px;font-weight:750}
 
 </style>
 </head>
 <body>
-<div class="avz-banner">Внутренний инструмент Aveasy — <b>себестоимость и маржа видны на этой странице</b>. Клиенту отправляйте выгрузку «Для клиента», а не ссылку.</div>
-
 <header class="avz-top">
-  <div class="avz-tariffs" id="avz-tariffs"></div>
-  <button type="button" class="avz-model-btn" id="avz-model-toggle">
-    Параметры модели <span class="avz-model-dot" hidden>●</span>
-  </button>
+  <div class="avz-brand"><span class="avz-brand-mark">A</span><span>AVEASY</span><span class="avz-brand-divider"></span><span class="avz-brand-title">Конструктор предложения</span><span class="avz-private">Внутренний</span></div>
+  <div class="avz-header-actions"><span class="avz-save-state" id="avz-save-state" aria-live="polite"></span><button type="button" class="avz-text-btn" id="avz-new">Новый расчёт</button><button type="button" class="avz-model-btn" id="avz-model-toggle">Ставки и нормативы <span class="avz-model-dot" hidden>●</span></button></div>
 </header>
-
-<main class="avz-main">
-  <form class="avz-controls" id="ave-form">
-    <div class="avz-field-group">
-      <div class="avz-group-title">Что размещаем</div>
-      <div id="items-container"></div>
-      <button type="button" class="avz-add-item" id="avz-add-item">+ ещё тип товара</button>
-      <label class="avz-field">Профилей
-        <input type="number" name="accounts" value="1" min="1" step="1">
-      </label>
-      <label class="avz-field">Городов
-        <input type="number" name="regions" value="1" min="1" step="1">
-      </label>
-      <label class="avz-field avz-field-wide">Как работаем с городами
-        <select name="regionMode" id="avz-regionmode"></select>
-      </label>
-      <small class="avz-hint" id="avz-regionmode-hint"></small>
-    </div>
-
-    <div class="avz-field-group">
-      <div class="avz-group-title">Запуск — разовые работы</div>
-      <label class="avz-field avz-field-wide">Как у клиента сейчас с данными о товарах?
-        <select name="placementLevel" id="avz-placement"></select>
-      </label>
-      <small class="avz-hint" id="avz-placement-hint"></small>
-      <div id="avz-services-launch"></div>
-    </div>
-
-    <div class="avz-field-group">
-      <div class="avz-group-title">Ежемесячно</div>
-      <label class="avz-toggle"><input type="checkbox" name="managementOn" checked><span>Ведение и оптимизация</span></label>
-      <div id="avz-services-monthly"></div>
-      <label class="avz-toggle"><input type="checkbox" name="noMonthly"><span>Разовый проект — без ежемесячной части</span></label>
-      <label class="avz-toggle"><input type="checkbox" name="componentOrder"><span>Отдельная услуга по прайсу (без ведения и минимума комплексного проекта)</span></label>
-    </div>
-
-    <div class="avz-field-group">
-      <div class="avz-group-title">Премиум</div>
-      <div id="avz-services-premium"></div>
-    </div>
-  </form>
-
-  <aside class="avz-summary" id="avz-summary"></aside>
-</main>
-
-<section class="avz-bottom">
-  <div class="avz-actions" id="avz-actions">
-    <button type="button" class="avz-btn avz-btn-main" data-act="png-internal">Скачать внутренний расчёт</button>
-    <button type="button" class="avz-btn" data-act="copy-internal">Копировать картинку</button>
-    <button type="button" class="avz-btn avz-btn-client" data-act="png-quote">Выгрузить для клиента</button>
-    <button type="button" class="avz-btn" data-act="copy-quote">Копировать КП</button>
-    <button type="button" class="avz-btn" data-act="print">Печать / PDF</button>
-  </div>
-  <div class="avz-status" id="avz-status" hidden></div>
-  <details class="avz-rows-box">
-    <summary>Разбор по строкам — себестоимость, цена, наценка</summary>
-    <div id="avz-rows"></div>
-  </details>
-</section>
-
+<div class="avz-shell">
+  <div class="avz-intro"><div class="avz-eyebrow">Рабочее место менеджера</div><h1>Соберите предложение под задачу клиента</h1><p>Выберите отправную точку, уточните объём и услуги. Цена и экономика обновятся сразу.</p></div>
+  <main class="avz-main">
+    <form class="avz-controls" id="ave-form">
+      <section class="avz-field-group avz-scenario-section" aria-labelledby="avz-scenario-title"><div class="avz-section-heading"><span class="avz-step">01</span><div><h2 id="avz-scenario-title">С чего начнём</h2><p>Пакет задаёт базовый состав. Любую услугу ниже можно уточнить.</p></div></div><div class="avz-tariffs" id="avz-tariffs" role="group" aria-label="Сценарий расчёта"></div></section>
+      <section class="avz-field-group" aria-labelledby="avz-volume-title"><div class="avz-section-heading"><span class="avz-step">02</span><div><h2 id="avz-volume-title">Объявления и объём</h2><p>Добавьте группы, если товары или услуги требуют разной подготовки.</p></div></div><div id="items-container"></div><button type="button" class="avz-add-item" id="avz-add-item">+ Добавить группу объявлений</button><details class="avz-details" id="avz-geography"><summary>Профили и география <span id="avz-geo-summary"></span></summary><div class="avz-details-body"><div class="avz-field-grid"><label class="avz-field">Профилей Авито<input type="number" name="accounts" value="1" min="1" step="1" inputmode="numeric"></label><label class="avz-field">Городов<input type="number" name="regions" value="1" min="1" step="1" inputmode="numeric"></label></div><label class="avz-field avz-field-wide">Как показываем в разных городах<select name="regionMode" id="avz-regionmode"></select></label><small class="avz-hint" id="avz-regionmode-hint"></small></div></details></section>
+      <section class="avz-field-group" aria-labelledby="avz-launch-title"><div class="avz-section-heading"><span class="avz-step">03</span><div><h2 id="avz-launch-title">Запуск</h2><p>Разовые работы: подготовка данных, размещение и оформление.</p></div></div><label class="avz-field avz-field-wide">Как подготовлены данные для объявлений<select name="placementLevel" id="avz-placement"></select></label><small class="avz-hint" id="avz-placement-hint"></small><div class="avz-service-list" id="avz-services-launch"></div></section>
+      <section class="avz-field-group" aria-labelledby="avz-month-title"><div class="avz-section-heading"><span class="avz-step">04</span><div><h2 id="avz-month-title">Ежемесячная работа</h2><p>Ведение, ответы клиентам, аналитика и продвижение.</p></div></div><label class="avz-service avz-service-main"><input type="checkbox" name="managementOn" checked><span class="avz-service-copy"><b>Ведение и оптимизация объявлений</b><small>Следим за размещением и улучшаем результат каждый месяц.</small></span></label><div class="avz-service-list" id="avz-services-monthly"></div><details class="avz-details avz-details-compact" id="avz-advanced"><summary>Условия расчёта</summary><div class="avz-details-body"><label class="avz-service"><input type="checkbox" name="noMonthly"><span class="avz-service-copy"><b>Только разовые работы</b><small>Убрать ежемесячный платёж из предложения.</small></span></label><label class="avz-service"><input type="checkbox" name="componentOrder"><span class="avz-service-copy"><b>Отдельные услуги</b><small>Смета по выбранным работам без минимума комплексного проекта.</small></span></label></div></details></section>
+      <section class="avz-field-group" aria-labelledby="avz-extra-title"><div class="avz-section-heading"><span class="avz-step">05</span><div><h2 id="avz-extra-title">Дополнительные услуги</h2><p>Подключайте, когда они нужны клиенту.</p></div></div><div class="avz-service-list" id="avz-services-premium"></div></section>
+    </form>
+    <aside class="avz-summary" id="avz-summary" aria-live="polite"></aside>
+  </main>
+  <section class="avz-proposal" aria-labelledby="avz-proposal-title"><div class="avz-proposal-head"><div class="avz-eyebrow">Готово к отправке</div><h2 id="avz-proposal-title">Предложение для клиента</h2><p>Здесь только состав и стоимость. Внутренняя экономика в клиентские файлы не попадает.</p></div><div class="avz-quote-preview" id="avz-quote-preview"></div><div class="avz-actions" id="avz-actions"><button type="button" class="avz-btn avz-btn-client" data-act="png-quote">Скачать КП картинкой</button><button type="button" class="avz-btn" data-act="copy-quote">Копировать картинку КП</button><button type="button" class="avz-btn" data-act="copy-includes">Копировать состав текстом</button><button type="button" class="avz-btn" data-act="print">Печать / PDF</button></div><div class="avz-status" id="avz-status" hidden role="status"></div></section>
+  <section class="avz-bottom" aria-label="Внутренний разбор"><details class="avz-rows-box"><summary>Подробная экономика по строкам</summary><div id="avz-rows"></div></details><details class="avz-export-box"><summary>Внутренняя выгрузка</summary><div class="avz-internal-actions"><button type="button" class="avz-btn" data-act="png-internal">Скачать внутренний расчёт</button><button type="button" class="avz-btn" data-act="copy-internal">Копировать внутренний расчёт</button></div></details></section>
+</div>
 <aside class="avz-model" id="avz-model-panel" hidden></aside>
 
 <script>
 (() => {
-  // ../Aveasy/core/pricing/config/pricing.config.js
+  // config/pricing.config.js
   var config = {
     currency: "RUB",
     rates: {
@@ -957,7 +403,7 @@ body {
     }
   };
 
-  // ../Aveasy/core/pricing/src/services.js
+  // src/services.js
   function resolveChoice(inputs, key, service) {
     const raw = inputs[key];
     if (service.control === "toggle") {
@@ -1021,7 +467,7 @@ body {
     return lines;
   }
 
-  // ../Aveasy/core/pricing/src/cost.js
+  // src/cost.js
   function computeCost(inputs, config2) {
     const w = config2.work;
     const rates = config2.rates;
@@ -1132,7 +578,7 @@ body {
     return { setup: sum("setup"), monthly: sum("monthly"), lines: finalLines };
   }
 
-  // ../Aveasy/core/pricing/src/price.js
+  // src/price.js
   function round(x, step) {
     if (!step || step <= 1) return Math.round(x);
     return Math.round(x / step) * step;
@@ -1155,7 +601,7 @@ body {
     return { setup: sum("setup"), monthly: sum("monthly"), lines };
   }
 
-  // ../Aveasy/core/pricing/src/guardrails.js
+  // src/guardrails.js
   function checkMarket(price, config2) {
     const setupCeiling = config2.market && config2.market.setupCeiling;
     return {
@@ -1164,7 +610,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/validate.js
+  // src/validate.js
   function describe(v) {
     return typeof v === "string" ? `«${v}»` : String(v);
   }
@@ -1276,7 +722,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/engine.js
+  // src/engine.js
   function pct(price, cost) {
     return cost === 0 ? 0 : (price - cost) / cost;
   }
@@ -1362,7 +808,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/clientView.js
+  // src/clientView.js
   var PLATFORM_NOTE = "Оплата Авито (размещение + продвижение) — отдельно, напрямую в Авито. В нашу цену не входит.";
   var PRELIMINARY_NOTE = "Предварительный расчёт: при большом объёме и количестве факторов итог приблизительный — состав и трудоёмкость нужно подтвердить, окончательную цену согласуем индивидуально.";
   function priceOf(result, key) {
@@ -1489,7 +935,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/reports.js
+  // src/reports.js
   var NUM = new Intl.NumberFormat("ru-RU");
   function fmtNum(n) {
     return NUM.format(n).replace(/[    ]/g, " ");
@@ -1777,7 +1223,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/tariffFit.js
+  // src/tariffFit.js
   function buildTariffFit(result, tariff, config2) {
     if (!tariff || !tariff.anchor) return null;
     const anchorMonthly = tariff.anchor.monthly;
@@ -1804,7 +1250,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/src/includes.js
+  // src/includes.js
   function collect(services, phase, items, isPackage) {
     for (const entry of items) {
       services.push({
@@ -1842,14 +1288,14 @@ body {
     collect(services, "monthly", quote.monthlyPackage, true);
     const tariffPoints = tariff && tariff.includes ? [...tariff.includes] : [];
     const title = tariff ? `Что входит — тариф «${tariff.label}»` : "Что входит";
-    const totals2 = {
+    const totals = {
       setup: { amount: quote.setup, isMinimum: quote.setupIsMinimum },
       monthly: { amount: quote.monthly, isMinimum: quote.monthlyIsMinimum }
     };
-    return { title, services, tariffPoints, totals: totals2, text: toText(title, services, tariffPoints) };
+    return { title, services, tariffPoints, totals, text: toText(title, services, tariffPoints) };
   }
 
-  // ../Aveasy/core/pricing/src/impacts.js
+  // src/impacts.js
   function computeImpacts(config2) {
     const m = 1 + config2.targetMargin;
     const r = config2.roundTo;
@@ -1911,7 +1357,7 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/web/widget.js
+  // web/widget.js
   function applyPreset(form, presetInputs, addItemRowFn) {
     const el = form.elements;
     if (el["accounts"]) el["accounts"].value = String(presetInputs.accounts);
@@ -1957,18 +1403,19 @@ body {
     };
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/formIO.js
-  function nonNegativeInt(raw) {
-    return Math.max(0, Math.round(Number(raw) || 0));
-  }
-  function atLeastOneInt(raw) {
-    return Math.max(1, Math.round(Number(raw) || 0));
+  // web/internal-page/formIO.js
+  function integerField(field, min, label) {
+    const raw = String(field?.value ?? "").trim();
+    const number = Number(raw);
+    const valid = raw !== "" && Number.isSafeInteger(number) && number >= min;
+    field?.setAttribute?.("aria-invalid", String(!valid));
+    if (!valid) throw new RangeError(`${label}: укажите целое число не меньше ${min}.`);
+    return number;
   }
   function readInternalInputs(form, config2) {
     const inputs = readInputs(form);
-    inputs.accounts = atLeastOneInt(inputs.accounts);
-    inputs.regions = atLeastOneInt(inputs.regions);
-    inputs.items = inputs.items.map((item) => ({ ...item, listings: nonNegativeInt(item.listings) }));
+    inputs.accounts = integerField(form.elements.accounts, 1, "Количество профилей");
+    inputs.regions = integerField(form.elements.regions, 1, "Количество городов");
     for (const [key, service] of Object.entries(config2.services || {})) {
       const el = form.elements[key];
       if (!el) continue;
@@ -1980,7 +1427,12 @@ body {
     const rows = form.querySelectorAll("#items-container .item-row");
     inputs.items = inputs.items.map((item, i) => {
       const field = rows[i] && rows[i].querySelector('input[name="itemNewPerMonth"]');
-      return { ...item, newPerMonth: nonNegativeInt(field ? field.value : 0) };
+      const listings = rows[i]?.querySelector('input[name="itemListings"]');
+      return {
+        ...item,
+        listings: integerField(listings, 0, `Группа ${i + 1}, объявлений сейчас`),
+        newPerMonth: field ? integerField(field, 0, `Группа ${i + 1}, новых объявлений в месяц`) : 0
+      };
     });
     return inputs;
   }
@@ -1998,7 +1450,7 @@ body {
     if (form.elements["componentOrder"]) form.elements["componentOrder"].checked = presetInputs.quoteMode === "component";
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/controls.js
+  // web/internal-page/controls.js
   var SCRATCH = {
     items: [{ type: "serial", listings: 50, contentStatus: "none" }],
     accounts: 1,
@@ -2008,6 +1460,22 @@ body {
     autoresponder: "basic",
     analytics: "basic",
     promotionMgmt: false
+  };
+  var COMPONENT = {
+    items: [{ type: "serial", listings: 0, newPerMonth: 0, contentStatus: "own" }],
+    accounts: 1,
+    regions: 1,
+    regionMode: "single",
+    placementLevel: "R1",
+    autoresponder: "none",
+    analytics: "basic",
+    promotionMgmt: false,
+    noManagement: true,
+    quoteMode: "component",
+    profileSetup: false,
+    abTesting: false,
+    biReporting: false,
+    prioritySupport: false
   };
   var SERVICE_SECTIONS = ["launch", "monthly", "premium"];
   function orphanServiceKeys(config2) {
@@ -2027,15 +1495,15 @@ body {
     return ` — ${parts.join(" + ")}`;
   }
   function serviceField(key, service, impacts) {
+    const label = key === "biReporting" ? "Кастомная BI-отчётность" : service.label;
     if (service.control === "toggle") {
       const hint = priceHint(impacts[key] && impacts[key].on);
-      return `<label class="avz-toggle"><input type="checkbox" name="${key}"${service.default ? " checked" : ""}><span>${service.label}${hint}</span></label>`;
+      return `<label class="avz-service" data-service="${key}"><input type="checkbox" name="${key}"${service.default ? " checked" : ""}><span class="avz-service-copy"><b>${label}<span class="avz-included" hidden>В тарифе</span></b><small>${service.on?.forClient || ""}</small><em data-price-for="${key}">${hint}</em></span></label>`;
     }
     const options = Object.entries(service.options).map(([value, option]) => {
-      const hint = option.setup || option.monthly ? priceHint(impacts[key] && impacts[key][value]) : "";
-      return `<option value="${value}"${value === service.default ? " selected" : ""}>${option.clientLabel}${hint}</option>`;
+      return `<option value="${value}"${value === service.default ? " selected" : ""}>${option.clientLabel}</option>`;
     }).join("");
-    return `<label class="avz-field avz-field-wide">${service.label}<select name="${key}">${options}</select></label>`;
+    return `<label class="avz-field avz-field-wide avz-select-service" data-service="${key}"><span>${label}</span><select name="${key}">${options}</select><small class="avz-service-description" data-description-for="${key}"></small><em class="avz-service-price" data-select-price="${key}"></em></label>`;
   }
   function mountControls({ root, config: config2, onChange }) {
     const form = root.querySelector("#ave-form");
@@ -2046,7 +1514,36 @@ body {
     const placementHint = root.querySelector("#avz-placement-hint");
     const regionSelect = root.querySelector("#avz-regionmode");
     const regionHint = root.querySelector("#avz-regionmode-hint");
+    const geoSummary = root.querySelector("#avz-geo-summary");
     let activeKey = null;
+    let scenario = "start";
+    function updateServicePrices() {
+      const listings = [...container.querySelectorAll('[name="itemListings"]')].reduce((sum, input) => sum + (Number(input.value) || 0), 0);
+      const accounts = Number(form.elements.accounts.value) || 1;
+      const rate = config2.rates;
+      const round2 = config2.roundTo || 1;
+      const phasePrice = (formula) => {
+        if (!formula) return 0;
+        if (typeof formula.fixedPrice === "number") return formula.fixedPrice;
+        const cost = ((formula.hours || 0) + (formula.hoursPerAccount || 0) * accounts + (formula.hoursPerListing || 0) * listings) * rate[formula.role];
+        return Math.round(cost * (1 + config2.targetMargin) / round2) * round2;
+      };
+      const labelFor = (variant) => {
+        const setup = phasePrice(variant.setup);
+        const monthly = phasePrice(variant.monthly);
+        return [setup ? `${fmtRub(setup)} разово` : "", monthly ? `${fmtRub(monthly)}/мес` : ""].filter(Boolean).join(" + ") || "бесплатно";
+      };
+      for (const [key, service] of Object.entries(config2.services)) {
+        if (service.control === "toggle") {
+          const hint = root.querySelector(`[data-price-for="${key}"]`);
+          if (hint) hint.textContent = form.elements[key].disabled ? "В базовой цене тарифа" : `По прайсу: ${labelFor(service.on)}`;
+        } else {
+          const select = form.elements[key];
+          const price = root.querySelector(`[data-select-price="${key}"]`);
+          if (price) price.textContent = `Стоимость: ${labelFor(service.options[select.value] || {})}`;
+        }
+      }
+    }
     function renderPlacementOptions() {
       placementSelect.innerHTML = Object.entries(config2.placement).map(([key, entry]) => `<option value="${key}">${entry.clientLabel} — ${placementPrice(entry)}</option>`).join("");
       placementSelect.value = config2.defaultPlacementLevel || "R2";
@@ -2067,28 +1564,39 @@ body {
       }
     }
     function updateHints() {
+      let scenarioNote = root.querySelector("#avz-scenario-note");
+      if (!scenarioNote) {
+        scenarioNote = document.createElement("p");
+        scenarioNote.id = "avz-scenario-note";
+        scenarioNote.className = "avz-hint avz-scenario-note";
+        tariffsBox.after(scenarioNote);
+      }
+      scenarioNote.textContent = scenario === "scratch" ? `Комплексный проект: непустые разовые работы — минимум ${fmtRub(config2.setupMin)}, ежемесячные — минимум ${fmtRub(config2.minMonthly)}. Одна самостоятельная задача? Выберите «Отдельные услуги» — там цены без этих минимумов.` : scenario === "component" ? "Оплачиваются только выбранные работы. Ведение и минимумы комплексного проекта не добавляются." : "Цена пакета покрывает базовый состав. Разовые работы и выбранные усилители добавляются отдельно.";
       const placement = config2.placement[placementSelect.value];
       placementHint.textContent = placement ? placement.explain : "";
       const mode = config2.regionModes[regionSelect.value];
       regionHint.textContent = mode ? mode.note : "";
       regionHint.classList.toggle("avz-hint-warn", !!(mode && mode.requiresTariff));
+      geoSummary.textContent = `${form.elements["accounts"].value || 1} проф. · ${form.elements["regions"].value || 1} гор. · ${mode?.label || ""}`;
+      for (const key of ["autoresponder", "analytics"]) {
+        const service = config2.services[key];
+        const value = form.elements[key]?.value;
+        const target = root.querySelector(`[data-description-for="${key}"]`);
+        if (target) target.textContent = service.options[value]?.forClient || "Дополнительная работа не выбрана.";
+      }
+      updateServicePrices();
     }
     function addItemRow(item) {
       const row = document.createElement("div");
       row.className = "item-row";
       const typeOptions = Object.entries(config2.content.typeLabels).map(([value, label]) => `<option value="${value}"${item && item.type === value ? " selected" : ""}>${label}</option>`).join("");
       row.innerHTML = `
-      <input type="number" name="itemListings" class="avz-qty" min="1" step="10" value="${item ? item.listings : 50}">
-      <input type="number" name="itemNewPerMonth" class="avz-qty avz-qty-new" min="0" step="5"
-             title="Сколько новых объявлений добавляем каждый месяц"
-             value="${item && item.newPerMonth ? item.newPerMonth : 0}">
-      <select name="itemType" class="avz-item-type">${typeOptions}</select>
-      <select name="itemContentStatus" class="avz-item-status">
-        <option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>контент свой</option>
-        <option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>контент частично</option>
-        <option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>контент делаем мы</option>
-      </select>
-      <button type="button" class="avz-item-remove" title="Убрать">✕</button>`;
+      <div class="avz-item-head"><b>Группа объявлений</b><button type="button" class="avz-item-remove" aria-label="Удалить группу объявлений">Удалить</button></div>
+      <div class="avz-item-fields"><label class="avz-field">Объявлений сейчас<input type="number" name="itemListings" class="avz-qty" min="0" step="1" inputmode="numeric" value="${item ? item.listings : 50}"></label>
+      <label class="avz-field">Новых в месяц<input type="number" name="itemNewPerMonth" class="avz-qty avz-qty-new" min="0" step="1" inputmode="numeric" value="${item && item.newPerMonth ? item.newPerMonth : 0}"></label>
+      <label class="avz-field">Тип товаров или услуг<select name="itemType" class="avz-item-type">${typeOptions}</select></label>
+      <label class="avz-field">Тексты и фото<select name="itemContentStatus" class="avz-item-status"><option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>Готовы у клиента</option><option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>Готовы частично</option><option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>Подготовим мы</option></select></label></div>
+      <p class="avz-item-note">Новые в месяц — объявления, которые потребуется создавать дополнительно каждый месяц.</p>`;
       row.querySelector(".avz-item-remove").addEventListener("click", () => {
         if (container.querySelectorAll(".item-row").length > 1) {
           row.remove();
@@ -2110,30 +1618,41 @@ body {
     function markManual() {
     }
     function applyTariff(key) {
-      const inputs = key ? config2.presets[key].inputs : SCRATCH;
+      const inputs = key === "component" ? COMPONENT : key ? config2.presets[key].inputs : SCRATCH;
       applyInternalPreset(form, inputs, config2, addItemRow);
       form.elements["noMonthly"].checked = false;
-      activeKey = key;
+      activeKey = key && key !== "component" ? key : null;
+      scenario = key || "scratch";
       renderTariffs();
+      updatePackageLocks();
       updateHints();
       onChange();
     }
+    function updatePackageLocks() {
+      for (const [key, service] of Object.entries(config2.services)) {
+        if (service.control !== "toggle") continue;
+        const input = form.elements[key];
+        const required = !!activeKey && !!config2.presets[activeKey].anchor && !!service.on?.monthly && !!config2.presets[activeKey].inputs[key];
+        input.disabled = required;
+        const badge = root.querySelector(`[data-service="${key}"] .avz-included`);
+        if (badge) badge.hidden = !required;
+      }
+    }
     function renderTariffs() {
       const cards = Object.entries(config2.presets).map(([key, tariff]) => `
-      <button type="button" class="avz-tariff${activeKey === key ? " avz-tariff-on" : ""}" data-tariff="${key}">
+      <button type="button" class="avz-tariff${scenario === key ? " avz-tariff-on" : ""}" data-tariff="${key}" aria-pressed="${scenario === key}">
         <span class="avz-tariff-name">${tariff.label}</span>
-        <span class="avz-tariff-price">${tariff.anchor ? tariff.anchor.label : "по договорённости"}</span>
+        <span class="avz-tariff-price">${tariff.sub}</span>
       </button>`).join("");
       tariffsBox.innerHTML = cards + `
-      <button type="button" class="avz-tariff avz-tariff-scratch${activeKey === null ? " avz-tariff-on" : ""}" data-tariff="">
-        <span class="avz-tariff-name">С нуля</span>
-        <span class="avz-tariff-price">под задачу клиента</span>
-      </button>`;
+      <button type="button" class="avz-tariff avz-tariff-scratch${scenario === "scratch" ? " avz-tariff-on" : ""}" data-tariff="scratch" aria-pressed="${scenario === "scratch"}"><span class="avz-tariff-name">Свой состав</span><span class="avz-tariff-price">Комплекс под задачу клиента</span></button>
+      <button type="button" class="avz-tariff avz-tariff-scratch${scenario === "component" ? " avz-tariff-on" : ""}" data-tariff="component" aria-pressed="${scenario === "component"}"><span class="avz-tariff-name">Отдельные услуги</span><span class="avz-tariff-price">Например, только автоответчик</span></button>`;
     }
     tariffsBox.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-tariff]");
       if (!btn) return;
-      applyTariff(btn.getAttribute("data-tariff") || null);
+      const key = btn.getAttribute("data-tariff");
+      applyTariff(key === "scratch" ? null : key);
     });
     addBtn.addEventListener("click", () => {
       addItemRow(null);
@@ -2142,10 +1661,41 @@ body {
     });
     form.addEventListener("input", () => {
       markManual();
+      updateHints();
       onChange();
     });
-    form.addEventListener("change", () => {
-      if (form.elements["componentOrder"]?.checked) form.elements["managementOn"].checked = false;
+    form.addEventListener("submit", (e) => e.preventDefault());
+    form.addEventListener("change", (e) => {
+      if (e.target.name === "componentOrder" && e.target.checked) {
+        form.elements["managementOn"].checked = false;
+        form.elements["noMonthly"].checked = false;
+        activeKey = null;
+        scenario = "component";
+        renderTariffs();
+        updatePackageLocks();
+      } else if (e.target.name === "componentOrder" && !e.target.checked) {
+        activeKey = null;
+        scenario = "scratch";
+        renderTariffs();
+        updatePackageLocks();
+      } else if (e.target.name === "managementOn" && e.target.checked) {
+        form.elements["componentOrder"].checked = false;
+        if (scenario === "component") {
+          scenario = "scratch";
+          renderTariffs();
+        }
+      } else if (e.target.name === "managementOn" && !e.target.checked) {
+        activeKey = null;
+        scenario = "scratch";
+        renderTariffs();
+        updatePackageLocks();
+      } else if (e.target.name === "noMonthly" && e.target.checked) {
+        form.elements["componentOrder"].checked = false;
+        activeKey = null;
+        scenario = "scratch";
+        renderTariffs();
+        updatePackageLocks();
+      }
       markManual();
       updateHints();
       onChange();
@@ -2155,66 +1705,76 @@ body {
     renderServices();
     updateHints();
     renderTariffs();
-    return { applyTariff, addItemRow, activeTariffKey: () => activeKey };
+    return {
+      applyTariff,
+      addItemRow,
+      activeTariffKey: () => activeKey,
+      scenario: () => scenario,
+      refreshHints: updateHints,
+      restore: (key, inputs) => {
+        applyTariff(key === "scratch" ? null : key);
+        if (inputs) {
+          applyInternalPreset(form, inputs, config2, addItemRow);
+          form.elements.noMonthly.checked = !!inputs.noMonthly;
+          updateHints();
+          onChange();
+        }
+      }
+    };
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/summary.js
+  // web/internal-page/summary.js
   var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  function totals(report) {
-    const oneOff = report.monthly.price === 0;
-    const card = (label, value, sub, strong) => `
-    <div class="avz-card${strong ? " avz-card-strong" : ""}">
-      <div class="avz-card-label">${esc(label)}</div>
-      <div class="avz-card-value">${esc(value)}</div>
-      <div class="avz-card-sub">${esc(sub)}</div>
-    </div>`;
-    return `<div class="avz-cards">
-    ${card("Настройка, разово", fmtRub(report.setup.price), totalsSubtitle(report.setup))}
-    ${oneOff ? card("Ведение, в месяц", "—", "разовый проект — без ежемесячного ведения") : card("Ведение, в месяц", fmtRub(report.monthly.price), totalsSubtitle(report.monthly))}
-    ${card("Первый платёж", fmtRub(report.firstPayment), oneOff ? "только настройка" : "настройка + первый месяц", true)}
-  </div>`;
+  var money = (value) => esc(fmtRub(value));
+  var pct2 = (value) => value === null ? "—" : `${esc(fmtNum(value))}%`;
+  function economyRows(report) {
+    return [
+      ["Себестоимость", (phase) => money(phase.cost)],
+      ["Валовая прибыль", (phase) => money(phase.price - phase.cost)],
+      ["Маржа", (phase) => pct2(phase.marginPct)],
+      ["Наценка", (phase) => pct2(phase.markupPct)]
+    ].map(([label, value]) => `<tr><th scope="row">${label}</th><td${label === "Валовая прибыль" ? ' class="avz-profit"' : ""}>${value(report.setup)}</td><td${label === "Валовая прибыль" ? ' class="avz-profit"' : ""}>${value(report.monthly)}</td></tr>`).join("");
   }
-  function tariffBox(fit, tariffLabel) {
-    if (!fit) {
-      return tariffLabel ? `<div class="avz-fit avz-fit-none">Тариф «${esc(tariffLabel)}» — цена по договорённости, публичного якоря нет: считаем от параметров.</div>` : "";
-    }
-    const profit = fit.markupAtAnchor === null ? "вся цена — прибыль" : `наценка ${fmtNum(fit.markupAtAnchor)}% · маржа ${fmtNum(fit.marginAtAnchor)}%`;
-    return `
-    <div class="avz-fit ${fit.within ? "avz-fit-ok" : "avz-fit-over"}">
-      <div class="avz-fit-head">Тариф «${esc(fit.label)}» — ${esc(fit.anchorLabel)}</div>
-      <div class="avz-fit-note">${esc(fit.note)}</div>
-      <div class="avz-fit-margin${fit.belowFloor ? " avz-fit-low" : ""}">
-        При цене тарифа ${esc(fmtRub(fit.anchorMonthly))}: ${esc(profit)}${fit.belowFloor ? " — ниже порога" : ""}
-      </div>
-    </div>`;
-  }
-  function includesBox(includes) {
-    const list = (phase) => includes.services.filter((s) => s.phase === phase).map((s) => `<li><span>${esc(s.label)}${s.detail ? `<i>${esc(s.detail)}</i>` : ""}</span>${s.amountText ? `<b>${esc(s.amountText)}</b>` : ""}</li>`).join("");
-    const setup = list("setup");
-    const monthly = list("monthly");
-    const points = includes.tariffPoints.map((p) => `<li><span>${esc(p)}</span></li>`).join("");
-    const sub = (title, total) => `<div class="avz-inc-sub">${title}
-    <b>${esc(fmtRub(total.amount))}${total.isMinimum ? " — базовый пакет" : ""}</b></div>`;
-    return `
-    <div class="avz-inc">
-      <div class="avz-inc-head">
-        <span>${esc(includes.title)}</span>
-        <button type="button" class="avz-inc-copy" data-act="copy-includes">скопировать текстом</button>
-      </div>
-      ${setup ? sub("Разовая настройка", includes.totals.setup) + `<ul class="avz-inc-list">${setup}</ul>` : ""}
-      ${monthly ? sub("Ежемесячно", includes.totals.monthly) + `<ul class="avz-inc-list">${monthly}</ul>` : ""}
-      ${points ? `<div class="avz-inc-sub">По тарифу также</div><ul class="avz-inc-list avz-inc-points">${points}</ul>` : ""}
-    </div>`;
+  function warnings(report, result) {
+    const critical = [];
+    if (result.guardrails.excludedMonthlyServices.length) critical.push(`Ежемесячные услуги исключены из разового проекта: ${result.guardrails.excludedMonthlyServices.join(", ")}. Проверьте состав перед отправкой.`);
+    if (result.economics.setup.belowMarkupFloor || result.economics.monthly.belowMarkupFloor) critical.push("Наценка ниже допустимого порога. Уточните цену или состав работ перед отправкой КП.");
+    if (report.firstPayment === 0) critical.push("Выберите хотя бы одну платную работу, чтобы подготовить КП.");
+    const info = report.flags.filter((f) => !f.includes("ВНИМАНИЕ") && !f.includes("Разовый режим исключил"));
+    return `${critical.length ? `<div class="avz-alert avz-alert-critical" role="alert"><b>Нужна проверка</b>${critical.map((f) => `<p>${esc(f)}</p>`).join("")}</div>` : ""}
+    ${info.length ? `<details class="avz-info-flags"><summary>Пояснения к расчёту <span>${info.length}</span></summary><ul>${info.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></details>` : ""}`;
   }
   function mountSummary({ root }) {
     const box = root.querySelector("#avz-summary");
-    function render({ report, fit, includes, tariffLabel }) {
-      box.innerHTML = totals(report) + tariffBox(fit, tariffLabel) + (report.flags.length ? `<div class="avz-warn">${report.flags.map((f) => `<div>• ${esc(f)}</div>`).join("")}</div>` : "") + includesBox(includes);
+    function render({ report, result, fit, tariffLabel }) {
+      const monthly = report.monthly.price > 0;
+      box.innerHTML = `<div class="avz-result-card"><div class="avz-eyebrow">Результат расчёта</div><h2>Цена для клиента</h2><div class="avz-total avz-total-primary"><span>Ежемесячно</span><strong>${monthly ? money(report.monthly.price) : "—"}</strong></div><div class="avz-total"><span>Разово при запуске</span><strong>${money(report.setup.price)}</strong></div><div class="avz-first-payment"><span>Первый платёж<small>${monthly ? "Запуск + первый месяц" : "Только разовые работы"}</small></span><strong>${money(report.firstPayment)}</strong></div></div>
+    <div class="avz-economy-card"><div class="avz-eyebrow">Только для команды</div><h2>Экономика проекта</h2><div class="avz-economy-scroll"><table><thead><tr><th scope="col">Показатель</th><th scope="col">Разово</th><th scope="col">В месяц</th></tr></thead><tbody>${economyRows(report)}</tbody></table></div><p class="avz-economy-note">Маржа — доля прибыли в цене. Наценка — прибыль относительно себестоимости. Это расчётная валовая прибыль: налоги и накладные расходы здесь не учтены.</p></div>
+    ${warnings(report, result)}
+    ${fit ? `<details class="avz-fit-details"><summary>Сравнение с ценой пакета</summary><p>${esc(fit.note)}</p><p>На цене сайта: ${money(fit.anchorMonthly)} в месяц${fit.belowFloor ? " · наценка ниже порога" : ""}.</p></details>` : tariffLabel ? `<details class="avz-fit-details"><summary>Сравнение с ценой пакета</summary><p>Для пакета «${esc(tariffLabel)}» цена определяется индивидуально.</p></details>` : ""}`;
     }
-    return { render };
+    function error(message) {
+      box.innerHTML = `<div class="avz-alert avz-alert-critical" role="alert"><b>Проверьте ввод</b><p>${esc(message)}</p></div>`;
+    }
+    return { render, error };
+  }
+  function mountQuotePreview({ root }) {
+    const box = root.querySelector("#avz-quote-preview");
+    function lines(title, items, packageItems, isMinimum, packageAmount) {
+      if (!items.length && !packageItems.length) return "";
+      const entries = [...packageItems.map((x) => `<li><span>${esc(x.label)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span><em>В составе</em></li>`), ...items.map((x) => `<li><span>${esc(x.label)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span><b>${esc(x.amountText)}</b></li>`)];
+      return `<section class="avz-quote-phase"><h3>${title}${isMinimum ? `<span>Базовый пакет ${money(packageAmount)}</span>` : ""}</h3><ul>${entries.join("")}</ul></section>`;
+    }
+    function render(quote) {
+      box.innerHTML = `<div class="avz-quote-paper"><div class="avz-quote-brand">AVEASY <span>Коммерческое предложение</span></div><div class="avz-quote-totals"><div><small>Разово</small><strong>${money(quote.setup)}</strong></div><div><small>Ежемесячно</small><strong>${quote.monthly ? money(quote.monthly) : "—"}</strong></div><div class="avz-quote-first"><small>Первый платёж</small><strong>${money(quote.firstPayment)}</strong></div></div><div class="avz-quote-lines">${lines("Запуск", quote.setupItems, quote.setupPackage, quote.setupIsMinimum, quote.setup)}${lines("Каждый месяц", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum, quote.monthlyPackageAmount)}</div>${quote.notes.length ? `<div class="avz-quote-notes">${quote.notes.map((n) => `<p>${esc(n)}</p>`).join("")}</div>` : ""}</div>`;
+    }
+    function clear() {
+      box.innerHTML = '<div class="avz-quote-empty" role="status">Выберите услуги и устраните замечания к расчёту — здесь появится готовое предложение.</div>';
+    }
+    return { render, clear };
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/rows.js
+  // web/internal-page/rows.js
   var esc2 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function mountRows({ root }) {
     const box = root.querySelector("#avz-rows");
@@ -2243,7 +1803,7 @@ body {
     return { render };
   }
 
-  // ../Aveasy/core/pricing/src/configOverrides.js
+  // src/configOverrides.js
   function pathKey(path) {
     return path.join(".");
   }
@@ -2267,7 +1827,7 @@ body {
     return liveConfig;
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/modelPanel.js
+  // web/internal-page/modelPanel.js
   var esc3 = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   var toField = (spec) => spec.kind === "percent" ? Math.round(spec.raw * 1e3) / 10 : spec.raw;
   var fromField = (spec, value) => spec.kind === "percent" ? value / 100 : value;
@@ -2281,8 +1841,8 @@ body {
     let specs = [];
     panel.innerHTML = `
     <div class="avz-model-head">
-      <b>Параметры модели</b>
-      <button type="button" class="avz-model-close" data-act="close">✕</button>
+      <b id="avz-model-title">Ставки и нормативы</b>
+      <button type="button" class="avz-model-close" data-act="close" aria-label="Закрыть ставки и нормативы">✕</button>
     </div>
     <p class="avz-model-note">Правки живут только в этой вкладке: файл прайса не меняется, обновление страницы всё вернёт.</p>
     <button type="button" class="avz-model-reset" data-act="reset" hidden>Вернуть значения из прайса</button>
@@ -2321,41 +1881,61 @@ body {
       applyOverridesInPlace(config2, baseConfig2, overrides);
       onApply();
     });
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-labelledby", "avz-model-title");
     panel.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-act]");
       if (!btn) return;
       if (btn.getAttribute("data-act") === "close") {
         panel.hidden = true;
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleBtn.focus();
         return;
       }
       for (const key of Object.keys(overrides)) delete overrides[key];
       applyOverridesInPlace(config2, baseConfig2, overrides);
       onApply();
     });
+    toggleBtn.setAttribute("aria-expanded", "false");
+    toggleBtn.setAttribute("aria-controls", "avz-model-panel");
     toggleBtn.addEventListener("click", () => {
       panel.hidden = !panel.hidden;
+      toggleBtn.setAttribute("aria-expanded", String(!panel.hidden));
+      if (!panel.hidden) panel.querySelector('[data-act="close"]').focus();
     });
-    return { render, isChanged: () => Object.keys(overrides).length > 0 };
+    panel.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        panel.hidden = true;
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleBtn.focus();
+      }
+    });
+    function reset() {
+      for (const key of Object.keys(overrides)) delete overrides[key];
+      applyOverridesInPlace(config2, baseConfig2, overrides);
+      onApply();
+    }
+    return { render, reset, isChanged: () => Object.keys(overrides).length > 0 };
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/png.js
+  // web/internal-page/png.js
   var SCALE = 2;
   var WIDTH = 1080;
   var PAD = 48;
   var T = {
-    ink: "#0a1828",
-    muted: "#5a6b80",
-    line: "rgba(10,24,40,.14)",
-    lineSoft: "rgba(10,24,40,.07)",
-    blue: "#0055cc",
+    ink: "#292720",
+    muted: "#6e6a60",
+    line: "rgba(41,39,32,.14)",
+    lineSoft: "rgba(41,39,32,.07)",
+    blue: "#a84924",
     bg: "#ffffff",
-    bgSoft: "#f0f3f8",
+    bgSoft: "#f5f3ef",
     warnBg: "#fff6e0",
     warnInk: "#7a4b00",
     warnLine: "rgba(180,120,0,.35)",
     good: "#0a7d3f",
     bad: "#b3261e",
-    face: 'Manrope, "Segoe UI", Roboto, Arial, sans-serif'
+    face: '"Segoe UI", Arial, sans-serif'
   };
   var font = (weight, size) => `${weight} ${size}px ${T.face}`;
   function wrap(ctx, text2, maxWidth) {
@@ -2686,7 +2266,7 @@ body {
           const line = item.detail ? `✓ ${item.label} — ${item.detail}` : `✓ ${item.label}`;
           h += text(ctx, line, x, y + h, { weight: 500, size: 15, color: T.ink, width: w }, draw) + 4;
         }
-        return h + 12;
+        h += 12;
       }
       for (const item of items) {
         const rowY = y + h;
@@ -2705,18 +2285,18 @@ body {
     };
     const blocks = [
       (ctx, x, y, w, draw) => header(ctx, {
-        title: "Расчёт стоимости — Авито под ключ",
+        title: "Коммерческое предложение Aveasy",
         subtitle: "Aveasy — агентство по ведению Авито",
         stamp
       }, x, y, w, draw),
       // При разовом проекте вторая карточка не рисуется: «0 ₽/мес» клиенту читается как ошибка в смете.
       (ctx, x, y, w, draw) => totalsCard(ctx, quote.monthly === 0 ? [{ label: "Стоимость работ", value: fmtRub(quote.firstPayment), sub: "разовый проект — без ежемесячного ведения", strong: true }] : [
         { label: "Первый платёж", value: fmtRub(quote.firstPayment), sub: "настройка + первый месяц", strong: true },
-        { label: "Далее, в месяц", value: fmtRub(quote.monthly), sub: "ведение при том же объёме" }
+        { label: "Далее, в месяц", value: fmtRub(quote.monthly), sub: "услуги при том же составе и объёме" }
       ], x, y, w, draw),
       spacer(24),
       listBlock("Разовая настройка", quote.setupItems, quote.setupPackage, quote.setupIsMinimum),
-      listBlock("Ежемесячное ведение", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum, quote.monthlyPackageAmount),
+      listBlock("Ежемесячные услуги", quote.monthlyItems, quote.monthlyPackage, quote.monthlyIsMinimum, quote.monthlyPackageAmount),
       (ctx, x, y, w, draw) => quote.isPreliminary ? warnBox(ctx, quote.notes.filter((n) => /предварительн/i.test(n)), x, y, w, draw) + 16 : 0,
       (ctx, x, y, w, draw) => {
         let h = 0;
@@ -2767,7 +2347,7 @@ body {
     return `${prefix}-${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}.png`;
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/app.js
+  // web/internal-page/app.js
   function mountApp({ root, config: config2, baseConfig: baseConfig2 }) {
     const form = root.querySelector("#ave-form");
     if (!form) return null;
@@ -2779,25 +2359,57 @@ body {
     }
     const controls = mountControls({ root, config: config2, onChange: () => refresh() });
     const summary = mountSummary({ root });
+    const quotePreview = mountQuotePreview({ root });
     const rows = mountRows({ root });
     const modelPanel = mountModelPanel({ root, config: config2, baseConfig: baseConfig2, onApply: () => refresh() });
     let last = { report: null, quote: null, includes: null, fit: null, valid: false };
+    const DRAFT_KEY = "aveasy.internalCalc.draft.v1";
+    const storage = (() => {
+      try {
+        return window.localStorage;
+      } catch {
+        return null;
+      }
+    })();
+    function saveDraft() {
+      if (!storage) {
+        root.querySelector("#avz-save-state").textContent = "Черновик не сохраняется";
+        return;
+      }
+      try {
+        const inputs = readInternalInputs(form, config2);
+        storage.setItem(DRAFT_KEY, JSON.stringify({ scenario: controls.scenario(), inputs }));
+        root.querySelector("#avz-save-state").textContent = "Черновик сохранён";
+      } catch {
+        root.querySelector("#avz-save-state").textContent = "Не удалось сохранить черновик";
+      }
+    }
     function currentTariff() {
       if (!form.elements["managementOn"].checked || form.elements["noMonthly"].checked) return null;
       const key = controls.activeTariffKey();
       return key ? config2.presets[key] : null;
     }
     function refresh() {
+      controls.refreshHints();
       let result;
       try {
         result = currentResult();
       } catch (e) {
-        last.valid = false;
-        root.querySelector("#avz-summary").textContent = e.message;
+        last = { report: null, quote: null, includes: null, fit: null, valid: false };
+        summary.error(e.message);
+        quotePreview.clear();
         root.querySelector("#avz-actions").hidden = true;
+        root.querySelector("#avz-save-state").textContent = "Проверьте поля";
+        root.querySelectorAll('[data-act$="internal"]').forEach((btn) => {
+          btn.disabled = true;
+        });
+        root.querySelector("#avz-rows").replaceChildren();
         return;
       }
       root.querySelector("#avz-actions").hidden = false;
+      root.querySelectorAll('[data-act$="internal"]').forEach((btn) => {
+        btn.disabled = false;
+      });
       const tariff = currentTariff();
       last = {
         report: buildInternalReport(result, config2, { baseConfig: baseConfig2 }),
@@ -2805,18 +2417,21 @@ body {
         includes: buildIncludes(result, config2, tariff),
         fit: buildTariffFit(result, tariff, config2)
       };
-      last.valid = result.guardrails.excludedMonthlyServices.length === 0 && !result.economics.setup.belowMarkupFloor && !result.economics.monthly.belowMarkupFloor;
+      last.valid = result.guardrails.excludedMonthlyServices.length === 0 && !result.economics.setup.belowMarkupFloor && !result.economics.monthly.belowMarkupFloor && last.quote.firstPayment > 0;
       summary.render({
         report: last.report,
+        result,
         fit: last.fit,
-        includes: last.includes,
         tariffLabel: tariff ? tariff.label : null
       });
+      if (last.valid) quotePreview.render(last.quote);
+      else quotePreview.clear();
       rows.render(last.report);
       modelPanel.render(last.report);
-      for (const btn of root.querySelectorAll('[data-act$="quote"], [data-act="copy-includes"]')) {
+      for (const btn of root.querySelectorAll('[data-act$="quote"], [data-act="copy-includes"], [data-act="print"]')) {
         btn.disabled = !last.valid;
       }
+      saveDraft();
     }
     const statusBox = root.querySelector("#avz-status");
     function status(message, kind = "ok") {
@@ -2846,11 +2461,16 @@ body {
         console.warn("Буфер недоступен", err);
       }
     });
-    root.querySelector("#avz-actions").addEventListener("click", async (e) => {
+    root.addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-act]");
       if (!btn) return;
       const act = btn.getAttribute("data-act");
-      if (act.endsWith("quote") && !last.valid) {
+      if (!["png-internal", "copy-internal", "png-quote", "copy-quote", "print"].includes(act)) return;
+      if (!last.report) {
+        status("Сначала исправьте ввод.", "warn");
+        return;
+      }
+      if ((act.endsWith("quote") || act === "print") && !last.valid) {
         status("Сначала устраните предупреждения о составе и наценке.", "warn");
         return;
       }
@@ -2871,7 +2491,27 @@ body {
       await downloadCanvas(canvas, fileName(isInternal ? "aveasy-vnutrenniy-raschet" : "aveasy-kp"));
       status(isInternal ? "Внутренний расчёт сохранён картинкой" : "Предложение для клиента сохранено картинкой");
     });
-    controls.applyTariff("start");
+    let draft = null;
+    try {
+      draft = storage && JSON.parse(storage.getItem(DRAFT_KEY));
+    } catch {
+    }
+    if (draft && ["start", "optimal", "scale", "scratch", "component"].includes(draft.scenario) && draft.inputs && typeof draft.inputs === "object") {
+      try {
+        controls.restore(draft.scenario, draft.inputs);
+      } catch {
+        controls.applyTariff("start");
+      }
+    } else controls.applyTariff("start");
+    root.querySelector("#avz-new").addEventListener("click", () => {
+      if (!window.confirm("Начать новый расчёт? Текущий черновик будет заменён.")) return;
+      try {
+        storage?.removeItem(DRAFT_KEY);
+      } catch {
+      }
+      modelPanel.reset();
+      controls.applyTariff("start");
+    });
     const api = {
       currentResult,
       currentTariff,
@@ -2889,7 +2529,7 @@ body {
     return api;
   }
 
-  // ../Aveasy/core/pricing/web/internal-page/entry.js
+  // web/internal-page/entry.js
   var baseConfig = JSON.parse(JSON.stringify(config));
   function init() {
     mountApp({ root: document, config, baseConfig });
