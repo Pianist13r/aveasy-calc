@@ -320,7 +320,7 @@
       },
       repeat: {
         label: "Отдельные объявления в каждом городе",
-        note: "Контент делаем один раз, но публикуем отдельно в каждом городе — растёт число размещений, а с ним ведение. В Услугах и Работе доступно свободно; в товарных категориях — только в отдельных категориях и при подключённом платном тарифе, иначе это дубли и Авито понизит лимит профиля.",
+        note: "Контент делаем один раз, но публикуем отдельно в каждом городе — растёт число размещений, а с ним ручное размещение и ведение. Группу, которую копировать не нужно (например, товары), можно оставить одним объявлением на все города. В Услугах и Работе доступно свободно; в товарных категориях — только в отдельных категориях и при подключённом платном тарифе, иначе это дубли и Авито понизит лимит профиля.",
         forClient: "Публикуем объявления отдельно в каждом городе — работы больше пропорционально числу городов.",
         requiresTariff: true
       }
@@ -480,7 +480,7 @@
     };
     const rm = REGION_MODES[inputs.regionMode] || REGION_MODES.single;
     const contentMult = rm.content ? regions : 1;
-    const pubMult = rm.publications ? regions : 1;
+    const pubMultOf = (item) => rm.publications && (rm.content || item.perCity !== false) ? regions : 1;
     const items = inputs.items || [];
     items.forEach((item, i) => {
       const perUnit = config2.content.byType[item.type];
@@ -516,9 +516,11 @@
       }
     });
     const totalListings = items.reduce((s, it) => s + it.listings, 0);
-    const totalPublications = totalListings * pubMult;
-    const placementQty = totalListings * contentMult;
+    const totalPublications = items.reduce((s, it) => s + it.listings * pubMultOf(it), 0);
+    const cityListings = items.reduce((s, it) => s + (pubMultOf(it) > 1 ? it.listings : 0), 0);
+    const placementQty = totalPublications;
     const totalNewListings = items.reduce((s, it) => s + (it.newPerMonth || 0), 0);
+    const newPublications = items.reduce((s, it) => s + (it.newPerMonth || 0) * pubMultOf(it), 0);
     const pl = inputs.placementLevel;
     const P = config2.placement[pl];
     if (P) {
@@ -530,9 +532,17 @@
       if (P.setupPerListing !== 0 && placementQty > 0) {
         const fixedPrice = P.setupPerListing * placementQty;
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
-        lines.push({ key: "placement_setup_listing", label: "Размещение объявлений", phase: "setup", hours: null, cost, fixedPrice, qty: placementQty, unit: "объявление" });
+        lines.push({
+          key: "placement_setup_listing",
+          label: "Размещение объявлений",
+          phase: "setup",
+          hours: null,
+          cost,
+          fixedPrice,
+          qty: placementQty,
+          unit: placementQty !== totalListings ? "размещение" : "объявление"
+        });
       }
-      const newPublications = totalNewListings * contentMult;
       if (P.setupPerListing !== 0 && newPublications > 0) {
         const fixedPrice = P.setupPerListing * newPublications;
         const cost = Math.round(fixedPrice / (1 + config2.targetMargin));
@@ -544,14 +554,14 @@
           cost,
           fixedPrice,
           qty: newPublications,
-          unit: "объявление"
+          unit: newPublications !== totalNewListings ? "размещение" : "объявление"
         });
       }
     }
     if (!inputs.noManagement) {
       const typeMult = w.management.typeMultiplier || {};
-      const weightedListings = pubMult * items.reduce(
-        (s, it) => s + it.listings * (typeMult[it.type] !== void 0 ? typeMult[it.type] : 1),
+      const weightedListings = items.reduce(
+        (s, it) => s + it.listings * pubMultOf(it) * (typeMult[it.type] !== void 0 ? typeMult[it.type] : 1),
         0
       );
       const mgmtH = w.management.monthlyHoursPerAccount * inputs.accounts + w.management.monthlyHoursPerListing * weightedListings;
@@ -565,7 +575,7 @@
         cost: mgmtCost,
         qty: null,
         unit: null,
-        scope: { listings: totalListings, publications: totalPublications, regions, accounts: inputs.accounts }
+        scope: { listings: totalListings, cityListings, publications: totalPublications, regions, accounts: inputs.accounts }
       });
     }
     lines.push(...serviceLines(inputs, config2, {
@@ -698,6 +708,11 @@
       if (item.newPerMonth !== void 0) {
         assertIntegerAtLeast(item.newPerMonth, 0, `${where}.newPerMonth (новых объявлений в месяц)`);
       }
+      if (item.perCity !== void 0 && typeof item.perCity !== "boolean") {
+        throw new RangeError(
+          `${where}.perCity (копия в каждом городе) должен быть true или false, получено ${describe(item.perCity)}`
+        );
+      }
     });
     const packageLimit = config2.presets?.[inputs.tariff]?.maxListings;
     if (!inputs.noMonthly && !inputs.noManagement && packageLimit && (inputs.items || []).reduce((sum, item) => sum + (item.listings || 0), 0) > packageLimit) {
@@ -829,8 +844,12 @@
   function managementDetail(scope) {
     if (!scope) return "ежемесячно";
     const parts = [];
+    const city = scope.cityListings === void 0 ? scope.listings : scope.cityListings;
+    const shared = scope.listings - city;
     if (scope.publications !== scope.listings) {
-      parts.push(`${scope.publications} ${plural(scope.publications, ["размещение", "размещения", "размещений"])} — ${scope.listings} ${plural(scope.listings, ["объявление", "объявления", "объявлений"])} в ${scope.regions} ${plural(scope.regions, ["городе", "городах", "городах"])}`);
+      let text2 = `${scope.publications} ${plural(scope.publications, ["размещение", "размещения", "размещений"])} — ${city} ${plural(city, ["объявление", "объявления", "объявлений"])} в ${scope.regions} ${plural(scope.regions, ["городе", "городах", "городах"])}`;
+      if (shared > 0) text2 += ` + ${shared} ${plural(shared, ["объявление", "объявления", "объявлений"])} на все города`;
+      parts.push(text2);
     } else {
       parts.push(`${scope.listings} ${plural(scope.listings, ["объявление", "объявления", "объявлений"])}`);
     }
@@ -843,7 +862,7 @@
     if (key === "management") return managementDetail(costLine && costLine.scope);
     if (costLine && costLine.qty > 0) {
       const perUnit = Math.round(linePrice / costLine.qty);
-      const unitShort = costLine.unit === "объявление" ? "объявл" : costLine.unit;
+      const unitShort = { "объявление": "объявл", "размещение": "размещ" }[costLine.unit] || costLine.unit;
       return `${perUnit} ₽/${unitShort} × ${costLine.qty}`;
     }
     if (key === "placement_setup") return "разовая настройка";
@@ -990,7 +1009,8 @@
     const params = [];
     const items = (inputs.items || []).map((it) => {
       const typeLabel = config2.content.typeLabels && config2.content.typeLabels[it.type] || it.type;
-      return `${typeLabel} — ${fmtNum(it.listings)} шт, ${CONTENT_STATUS_LABELS[it.contentStatus] || it.contentStatus}`;
+      const shared = inputs.regionMode === "repeat" && it.perCity === false ? ", одно на все города" : "";
+      return `${typeLabel} — ${fmtNum(it.listings)} шт, ${CONTENT_STATUS_LABELS[it.contentStatus] || it.contentStatus}${shared}`;
     });
     if (items.length) params.push({ label: "Товар", value: items.join(" · ") });
     params.push({ label: "Аккаунтов", value: String(inputs.accounts) });
@@ -1428,10 +1448,12 @@
     inputs.items = inputs.items.map((item, i) => {
       const field = rows[i] && rows[i].querySelector('input[name="itemNewPerMonth"]');
       const listings = rows[i]?.querySelector('input[name="itemListings"]');
+      const perCity = rows[i]?.querySelector('select[name="itemPerCity"]');
       return {
         ...item,
         listings: integerField(listings, 0, `Группа ${i + 1}, объявлений сейчас`),
-        newPerMonth: field ? integerField(field, 0, `Группа ${i + 1}, новых объявлений в месяц`) : 0
+        newPerMonth: field ? integerField(field, 0, `Группа ${i + 1}, новых объявлений в месяц`) : 0,
+        perCity: perCity ? perCity.value !== "shared" : true
       };
     });
     return inputs;
@@ -1576,6 +1598,7 @@
       placementHint.textContent = placement ? placement.explain : "";
       const mode = config2.regionModes[regionSelect.value];
       regionHint.textContent = mode ? mode.note : "";
+      updatePerCityFields();
       regionHint.classList.toggle("avz-hint-warn", !!(mode && mode.requiresTariff));
       geoSummary.textContent = `${form.elements["accounts"].value || 1} проф. · ${form.elements["regions"].value || 1} гор. · ${mode?.label || ""}`;
       for (const key of ["autoresponder", "analytics"]) {
@@ -1595,7 +1618,8 @@
       <div class="avz-item-fields"><label class="avz-field">Объявлений сейчас<input type="number" name="itemListings" class="avz-qty" min="0" step="1" inputmode="numeric" value="${item ? item.listings : 50}"></label>
       <label class="avz-field">Новых в месяц<input type="number" name="itemNewPerMonth" class="avz-qty avz-qty-new" min="0" step="1" inputmode="numeric" value="${item && item.newPerMonth ? item.newPerMonth : 0}"></label>
       <label class="avz-field">Тип товаров или услуг<select name="itemType" class="avz-item-type">${typeOptions}</select></label>
-      <label class="avz-field">Тексты и фото<select name="itemContentStatus" class="avz-item-status"><option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>Готовы у клиента</option><option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>Готовы частично</option><option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>Подготовим мы</option></select></label></div>
+      <label class="avz-field">Тексты и фото<select name="itemContentStatus" class="avz-item-status"><option value="own"${item && item.contentStatus === "own" ? " selected" : ""}>Готовы у клиента</option><option value="partial"${item && item.contentStatus === "partial" ? " selected" : ""}>Готовы частично</option><option value="none"${!item || item.contentStatus === "none" ? " selected" : ""}>Подготовим мы</option></select></label>
+      <label class="avz-field avz-item-percity">Как в городах<select name="itemPerCity"><option value="city"${!item || item.perCity !== false ? " selected" : ""}>Копия в каждом городе</option><option value="shared"${item && item.perCity === false ? " selected" : ""}>Одно на все города</option></select></label></div>
       <p class="avz-item-note">Новые в месяц — объявления, которые потребуется создавать дополнительно каждый месяц.</p>`;
       row.querySelector(".avz-item-remove").addEventListener("click", () => {
         if (container.querySelectorAll(".item-row").length > 1) {
@@ -1607,7 +1631,14 @@
       });
       container.appendChild(row);
       updateRemoveButtons();
+      updatePerCityFields();
       return row;
+    }
+    function updatePerCityFields() {
+      const repeat = regionSelect && regionSelect.value === "repeat";
+      container.querySelectorAll(".avz-item-percity").forEach((f) => {
+        f.hidden = !repeat;
+      });
     }
     function updateRemoveButtons() {
       const rows = container.querySelectorAll(".item-row");
